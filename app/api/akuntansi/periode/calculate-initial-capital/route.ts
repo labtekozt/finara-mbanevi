@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       0,
     );
 
-    // Get or create capital account (Modal)
+    // Get or create capital account (Modal Pemilik)
     let capitalAccount = await prisma.akun.findFirst({
       where: {
         kode: "3001", // Standard capital account code
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       capitalAccount = await prisma.akun.create({
         data: {
           kode: "3001",
-          nama: "Modal",
+          nama: "Modal Pemilik",
           tipe: "EQUITY",
           kategori: "OWNER_EQUITY",
           isActive: true,
@@ -124,6 +124,7 @@ export async function POST(request: Request) {
         deskripsi: "Modal Awal - Persediaan",
         periodeId: defaultPeriod.id,
         userId: session.user.id,
+        isPosted: true, // Mark as posted so it appears in reports
         details: {
           create: [
             // Debit inventory (asset increases)

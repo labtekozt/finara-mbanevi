@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { generateTransactionNumber } from "@/lib/transaction-number";
 import { createJournalEntryForStockAdjustment } from "@/lib/accounting-utils";
 import { z } from "zod";
@@ -73,6 +74,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Verify user exists in database (in case of DB reset with active session)
+    const userExists = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    });
+
+    if (!userExists) {
+      return NextResponse.json(
+        { error: "User session invalid. Please login again." },
+        { status: 401 },
+      );
+    }
+
     const body = await request.json();
     const validatedData = stockOpnameSchema.parse(body);
 
@@ -100,8 +113,11 @@ export async function POST(request: NextRequest) {
     }
 
     const adjustmentQty = validatedData.stokFisik - validatedData.stokSistem;
-    const adjustmentAmount =
-      Math.abs(adjustmentQty) * barang.hargaBeli.toNumber();
+    // Use Decimal for calculation to avoid floating point errors
+    const adjustmentAmountDecimal = barang.hargaBeli.times(
+      Math.abs(adjustmentQty),
+    );
+    const adjustmentAmount = adjustmentAmountDecimal.toNumber();
     const isIncrease = adjustmentQty > 0;
 
     // Create adjustment transaction and update stock

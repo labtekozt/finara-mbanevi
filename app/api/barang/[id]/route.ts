@@ -72,6 +72,18 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Verify user exists
+    const userExists = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    });
+
+    if (!userExists) {
+      return NextResponse.json(
+        { error: "User session invalid. Please relogin." },
+        { status: 401 },
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
     const validatedData = barangSchema.parse(body);

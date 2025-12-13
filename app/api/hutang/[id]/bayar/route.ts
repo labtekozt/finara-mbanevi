@@ -16,9 +16,24 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Verify user exists
+    const userExists = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    });
+
+    if (!userExists) {
+      return NextResponse.json(
+        { error: "User session invalid. Please relogin." },
+        { status: 401 },
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
-    const { jumlahBayar, metodePembayaran, catatan } = body;
+    let { jumlahBayar, metodePembayaran, catatan } = body;
+
+    // Ensure jumlahBayar is a number
+    jumlahBayar = Number(jumlahBayar);
 
     if (!jumlahBayar || jumlahBayar <= 0) {
       return NextResponse.json(
@@ -46,7 +61,12 @@ export async function POST(
         throw new Error("Hutang tidak ditemukan");
       }
 
-      if (jumlahBayar > hutang.sisaHutang) {
+      // Convert Decimal to number for comparison and calculation
+      const sisaHutangNum = Number(hutang.sisaHutang);
+      const totalBayarNum = Number(hutang.totalBayar);
+      const totalHutangNum = Number(hutang.totalHutang);
+
+      if (jumlahBayar > sisaHutangNum) {
         throw new Error("Jumlah bayar melebihi sisa hutang");
       }
 
@@ -61,8 +81,9 @@ export async function POST(
       });
 
       // Update hutang
-      const newTotalBayar = hutang.totalBayar + jumlahBayar;
-      const newSisaHutang = hutang.totalHutang - newTotalBayar;
+      // Use toFixed(2) to avoid floating point precision issues that cause numeric overflow
+      const newTotalBayar = Number((totalBayarNum + jumlahBayar).toFixed(2));
+      const newSisaHutang = Number((totalHutangNum - newTotalBayar).toFixed(2));
       const newStatus = newSisaHutang <= 0 ? "LUNAS" : "BELUM_LUNAS";
 
       const updatedHutang = await tx.hutang.update({

@@ -16,13 +16,36 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Verify user exists in database (in case of DB reset with active session)
+    const userExists = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    });
+
+    if (!userExists) {
+      return NextResponse.json(
+        { error: "User session invalid. Please login again." },
+        { status: 401 },
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
-    const { jumlahBayar, metodePembayaran, catatan } = body;
+    let { jumlahBayar, metodePembayaran, catatan } = body;
+
+    // Ensure jumlahBayar is a number
+    jumlahBayar = Number(jumlahBayar);
 
     if (!jumlahBayar || jumlahBayar <= 0) {
       return NextResponse.json(
         { error: "Jumlah bayar harus lebih dari 0" },
+        { status: 400 },
+      );
+    }
+
+    const MAX_DECIMAL = 9999999999999.99;
+    if (jumlahBayar > MAX_DECIMAL) {
+      return NextResponse.json(
+        { error: "Jumlah bayar terlalu besar" },
         { status: 400 },
       );
     }
@@ -38,7 +61,12 @@ export async function POST(
         throw new Error("Piutang tidak ditemukan");
       }
 
-      if (jumlahBayar > piutang.sisaPiutang) {
+      // Convert Decimal to number for comparison and calculation
+      const sisaPiutangNum = Number(piutang.sisaPiutang);
+      const totalBayarNum = Number(piutang.totalBayar);
+      const totalPiutangNum = Number(piutang.totalPiutang);
+
+      if (jumlahBayar > sisaPiutangNum) {
         throw new Error("Jumlah bayar melebihi sisa piutang");
       }
 
@@ -53,8 +81,9 @@ export async function POST(
       });
 
       // Update piutang
-      const newTotalBayar = piutang.totalBayar + jumlahBayar;
-      const newSisaPiutang = piutang.totalPiutang - newTotalBayar;
+      // Use toFixed(2) to avoid floating point precision issues
+      const newTotalBayar = Number((totalBayarNum + jumlahBayar));
+      const newSisaPiutang = Number((totalPiutangNum - newTotalBayar));
       const newStatus = newSisaPiutang <= 0 ? "LUNAS" : "BELUM_LUNAS";
 
       const updatedPiutang = await tx.piutang.update({

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { hasPermission } from "@/lib/permissions";
 import { TrialBalanceData } from "@/types/accounting";
 import { FinancialValidator } from "@/lib/financial-validator";
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
     const entries = await Promise.all(
       accounts.map(async (akun) => {
         // Get opening balance from SaldoAwal table for the period
-        let saldoAwal = 0;
+        let saldoAwalDecimal = new Prisma.Decimal(0);
         if (periode) {
           const openingBalance = await prisma.saldoAwal.findUnique({
             where: {
@@ -50,15 +51,14 @@ export async function GET(request: Request) {
               },
             },
           });
-          saldoAwal = openingBalance?.saldo.toNumber() || 0;
-        } else {
-          // For all periods, opening balance is 0 (or we could calculate from all historical transactions)
-          saldoAwal = 0;
+          if (openingBalance) {
+            saldoAwalDecimal = openingBalance.saldo;
+          }
         }
 
         // Calculate mutations within the period
-        let mutasiDebit = 0;
-        let mutasiKredit = 0;
+        let mutasiDebit = new Prisma.Decimal(0);
+        let mutasiKredit = new Prisma.Decimal(0);
 
         const mutationWhere: any = {
           akunId: akun.id,
@@ -79,18 +79,20 @@ export async function GET(request: Request) {
         });
 
         for (const detail of mutationDetails) {
-          mutasiDebit += detail.debit.toNumber();
-          mutasiKredit += detail.kredit.toNumber();
+          mutasiDebit = mutasiDebit.plus(detail.debit);
+          mutasiKredit = mutasiKredit.plus(detail.kredit);
         }
 
         // Calculate ending balance based on account type and normal balance
-        let saldoAkhir = saldoAwal;
+        let saldoAkhirDecimal = new Prisma.Decimal(0);
 
         // Apply mutations based on account type
         if (akun.tipe === "ASSET" || akun.tipe === "EXPENSE") {
           // Debit normal accounts: increase with debits, decrease with credits
           // Result: positive balances for debit normal accounts
-          saldoAkhir = saldoAkhir + mutasiDebit - mutasiKredit;
+          saldoAkhirDecimal = saldoAwalDecimal
+            .plus(mutasiDebit)
+            .minus(mutasiKredit);
         } else if (
           akun.tipe === "LIABILITY" ||
           akun.tipe === "EQUITY" ||
@@ -98,15 +100,18 @@ export async function GET(request: Request) {
         ) {
           // Credit normal accounts: increase with credits, decrease with debits
           // Result: negative balances for credit normal accounts (to represent credit balances)
-          saldoAkhir = -(saldoAwal + mutasiKredit - mutasiDebit);
+          saldoAkhirDecimal = saldoAwalDecimal
+            .plus(mutasiKredit)
+            .minus(mutasiDebit)
+            .negated();
         }
 
         return {
           akun,
-          saldoAwal,
-          mutasiDebit,
-          mutasiKredit,
-          saldoAkhir,
+          saldoAwal: saldoAwalDecimal.toNumber(),
+          mutasiDebit: mutasiDebit.toNumber(),
+          mutasiKredit: mutasiKredit.toNumber(),
+          saldoAkhir: saldoAkhirDecimal.toNumber(),
         };
       }),
     );

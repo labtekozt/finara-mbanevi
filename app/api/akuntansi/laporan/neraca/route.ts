@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { hasPermission } from "@/lib/permissions";
 import { BalanceSheetData } from "@/types/accounting";
 import { FinancialValidator } from "@/lib/financial-validator";
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
     const accountBalances = await Promise.all(
       balanceSheetAccounts.map(async (akun) => {
         // Get opening balance from SaldoAwal table
-        let saldoAwal = 0;
+        let saldoAwalDecimal = new Prisma.Decimal(0);
         if (periode) {
           const openingBalance = await prisma.saldoAwal.findUnique({
             where: {
@@ -55,7 +56,9 @@ export async function GET(request: Request) {
               },
             },
           });
-          saldoAwal = openingBalance?.saldo.toNumber() || 0;
+          if (openingBalance) {
+            saldoAwalDecimal = openingBalance.saldo;
+          }
         }
 
         // Calculate mutations up to period end (or current date if no period)
@@ -81,29 +84,35 @@ export async function GET(request: Request) {
         });
 
         // Calculate mutations based on account type normal balance
-        let mutations = 0;
+        let mutationsDecimal = new Prisma.Decimal(0);
         for (const detail of details) {
           if (akun.tipe === "ASSET") {
             // Assets: normal debit balance, debit increases, credit decreases
-            mutations += detail.debit.toNumber() - detail.kredit.toNumber();
+            mutationsDecimal = mutationsDecimal
+              .plus(detail.debit)
+              .minus(detail.kredit);
           } else if (akun.tipe === "LIABILITY") {
             // Liabilities: normal credit balance, credit increases, debit decreases
-            mutations += detail.kredit.toNumber() - detail.debit.toNumber();
+            mutationsDecimal = mutationsDecimal
+              .plus(detail.kredit)
+              .minus(detail.debit);
           } else if (akun.tipe === "EQUITY") {
             // Equity: normal credit balance, credit increases, debit decreases
-            mutations += detail.kredit.toNumber() - detail.debit.toNumber();
+            mutationsDecimal = mutationsDecimal
+              .plus(detail.kredit)
+              .minus(detail.debit);
           }
         }
 
         // Final balance = opening balance + mutations
         // For display, we want positive balances for normal balances
-        const balance = saldoAwal + mutations;
+        const balanceDecimal = saldoAwalDecimal.plus(mutationsDecimal);
 
         return {
           akun,
           // Keep the signed balance for proper accounting
-          saldo: balance,
-          displaySaldo: Math.abs(balance), // For UI display
+          saldo: balanceDecimal.toNumber(),
+          displaySaldo: Math.abs(balanceDecimal.toNumber()), // For UI display
         };
       }),
     );
@@ -117,19 +126,13 @@ export async function GET(request: Request) {
       (item) => item.akun.tipe === "EQUITY",
     );
 
-    // Calculate totals using absolute values for display (liabilities/equity are always positive)
-    const totalAssets = assets.reduce(
-      (sum, item) => sum + Math.abs(item.saldo),
-      0,
-    );
+    // Calculate totals using signed values to handle abnormal balances (e.g. negative cash)
+    const totalAssets = assets.reduce((sum, item) => sum + item.saldo, 0);
     const totalLiabilities = liabilities.reduce(
-      (sum, item) => sum + Math.abs(item.saldo),
+      (sum, item) => sum + item.saldo,
       0,
     );
-    const totalEquity = equity.reduce(
-      (sum, item) => sum + Math.abs(item.saldo),
-      0,
-    );
+    const totalEquity = equity.reduce((sum, item) => sum + item.saldo, 0);
 
     // Calculate net income (revenue - expenses) for the period
     let netIncome = 0;
@@ -152,7 +155,7 @@ export async function GET(request: Request) {
       });
 
       // Calculate total revenue
-      const totalRevenue = await Promise.all(
+      const totalRevenueDecimal = await Promise.all(
         revenueAccounts.map(async (akun) => {
           const details = await prisma.jurnalDetail.findMany({
             where: {
@@ -170,15 +173,16 @@ export async function GET(request: Request) {
             },
           });
           return details.reduce(
-            (sum, detail) =>
-              sum + detail.kredit.toNumber() - detail.debit.toNumber(),
-            0,
+            (sum, detail) => sum.plus(detail.kredit).minus(detail.debit),
+            new Prisma.Decimal(0),
           );
         }),
-      ).then((results) => results.reduce((sum, val) => sum + val, 0));
+      ).then((results) =>
+        results.reduce((sum, val) => sum.plus(val), new Prisma.Decimal(0)),
+      );
 
       // Calculate total expenses
-      const totalExpenses = await Promise.all(
+      const totalExpensesDecimal = await Promise.all(
         expenseAccounts.map(async (akun) => {
           const details = await prisma.jurnalDetail.findMany({
             where: {
@@ -196,14 +200,15 @@ export async function GET(request: Request) {
             },
           });
           return details.reduce(
-            (sum, detail) =>
-              sum + detail.debit.toNumber() - detail.kredit.toNumber(),
-            0,
+            (sum, detail) => sum.plus(detail.debit).minus(detail.kredit),
+            new Prisma.Decimal(0),
           );
         }),
-      ).then((results) => results.reduce((sum, val) => sum + val, 0));
+      ).then((results) =>
+        results.reduce((sum, val) => sum.plus(val), new Prisma.Decimal(0)),
+      );
 
-      netIncome = totalRevenue - totalExpenses;
+      netIncome = totalRevenueDecimal.minus(totalExpensesDecimal).toNumber();
     } else {
       // Calculate for all periods (ALL selection)
       // Get all revenue accounts
@@ -223,7 +228,7 @@ export async function GET(request: Request) {
       });
 
       // Calculate total revenue for all periods
-      const totalRevenue = await Promise.all(
+      const totalRevenueDecimal = await Promise.all(
         revenueAccounts.map(async (akun) => {
           const details = await prisma.jurnalDetail.findMany({
             where: {
@@ -238,15 +243,16 @@ export async function GET(request: Request) {
             },
           });
           return details.reduce(
-            (sum, detail) =>
-              sum + detail.kredit.toNumber() - detail.debit.toNumber(),
-            0,
+            (sum, detail) => sum.plus(detail.kredit).minus(detail.debit),
+            new Prisma.Decimal(0),
           );
         }),
-      ).then((results) => results.reduce((sum, val) => sum + val, 0));
+      ).then((results) =>
+        results.reduce((sum, val) => sum.plus(val), new Prisma.Decimal(0)),
+      );
 
       // Calculate total expenses for all periods
-      const totalExpenses = await Promise.all(
+      const totalExpensesDecimal = await Promise.all(
         expenseAccounts.map(async (akun) => {
           const details = await prisma.jurnalDetail.findMany({
             where: {
@@ -261,14 +267,15 @@ export async function GET(request: Request) {
             },
           });
           return details.reduce(
-            (sum, detail) =>
-              sum + detail.debit.toNumber() - detail.kredit.toNumber(),
-            0,
+            (sum, detail) => sum.plus(detail.debit).minus(detail.kredit),
+            new Prisma.Decimal(0),
           );
         }),
-      ).then((results) => results.reduce((sum, val) => sum + val, 0));
+      ).then((results) =>
+        results.reduce((sum, val) => sum.plus(val), new Prisma.Decimal(0)),
+      );
 
-      netIncome = totalRevenue - totalExpenses;
+      netIncome = totalRevenueDecimal.minus(totalExpensesDecimal).toNumber();
     }
 
     const totalLiabilitiesEquity = totalLiabilities + totalEquity + netIncome;
