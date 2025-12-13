@@ -66,7 +66,10 @@ describe("Piutang API", () => {
 
       (prisma.piutang.findMany as jest.Mock).mockResolvedValue(mockPiutang);
 
-      const req = new MockNextRequest("GET", "http://localhost:3000/api/piutang");
+      const req = new MockNextRequest(
+        "GET",
+        "http://localhost:3000/api/piutang",
+      );
 
       const response = await GET(req as any);
       const data = await response.json();

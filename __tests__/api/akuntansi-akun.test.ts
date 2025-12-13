@@ -184,7 +184,9 @@ describe("Akuntansi Akun API", () => {
         kategori: "ASSET",
       };
 
-      (prisma.akun.findUnique as jest.Mock).mockResolvedValue({ id: "existing" });
+      (prisma.akun.findUnique as jest.Mock).mockResolvedValue({
+        id: "existing",
+      });
 
       const req = new MockNextRequest(
         "POST",

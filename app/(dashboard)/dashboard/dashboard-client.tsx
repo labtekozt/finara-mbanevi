@@ -250,7 +250,7 @@ export function DashboardClient() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <div 
+              <div
                 className="text-2xl font-bold text-blue-900 truncate"
                 title={`Rp ${data.stats.totalPenjualan.toLocaleString("id-ID")}`}
               >
@@ -259,7 +259,7 @@ export function DashboardClient() {
               <p className="text-xs text-blue-700">Total Pendapatan</p>
             </div>
             <div className="border-t border-blue-200 pt-3">
-              <div 
+              <div
                 className="text-xl font-bold text-blue-900 truncate"
                 title={data.stats.totalTransaksi.toString()}
               >
@@ -279,7 +279,7 @@ export function DashboardClient() {
             <AlertTriangle className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div 
+            <div
               className="text-2xl font-bold text-orange-900 truncate"
               title={data.stats.barangStokRendah.toString()}
             >
@@ -301,7 +301,7 @@ export function DashboardClient() {
             <div>
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-green-600" />
-                <div 
+                <div
                   className="text-xl font-bold text-green-600 truncate"
                   title={data.stats.totalBarangMasuk.toString()}
                 >
@@ -313,7 +313,7 @@ export function DashboardClient() {
             <div className="border-t border-blue-200 pt-3">
               <div className="flex items-center gap-2">
                 <TrendingDown className="h-4 w-4 text-red-600" />
-                <div 
+                <div
                   className="text-xl font-bold text-red-600 truncate"
                   title={data.stats.totalBarangKeluar.toString()}
                 >

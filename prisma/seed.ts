@@ -59,28 +59,28 @@ async function main() {
   console.log("✓ Users created");
 
   // Create locations
-  console.log("Creating locations...");
-  const gudangUtama = await prisma.lokasi.create({
-    data: {
-      namaLokasi: "Gudang Utama",
-      alamat: "Jl. Raya Industri No. 123, Jakarta",
-    },
-  });
+  // console.log("Creating locations...");
+  // const gudangUtama = await prisma.lokasi.create({
+  //   data: {
+  //     namaLokasi: "Gudang Utama",
+  //     alamat: "Jl. Raya Industri No. 123, Jakarta",
+  //   },
+  // });
 
-  console.log("✓ Locations created");
+  // console.log("✓ Locations created");
 
   // Create accounting period
-  console.log("Creating accounting period...");
-  const periodeAkuntansi = await prisma.periodeAkuntansi.create({
-    data: {
-      nama: "2025 - Tahun Berjalan",
-      tanggalMulai: new Date("2025-01-01"),
-      tanggalAkhir: new Date("2025-12-31"),
-      isActive: true,
-    },
-  });
+    // console.log("Creating accounting period...");
+    // const periodeAkuntansi = await prisma.periodeAkuntansi.create({
+    //   data: {
+    //     nama: "2025 - Tahun Berjalan",
+    //     tanggalMulai: new Date("2025-01-01"),
+    //     tanggalAkhir: new Date("2025-12-31"),
+    //     isActive: true,
+    //   },
+    // });
 
-  console.log("✓ Accounting period created");
+  // console.log("✓ Accounting period created");
 
   // Create chart of accounts
   console.log("Creating chart of accounts...");
@@ -281,7 +281,7 @@ async function main() {
   console.log("✓ Chart of accounts created");
 
   // Create sample products
-  console.log("Creating sample products...");
+  // console.log("Creating sample products...");
 
   // // Product categories and templates
   // const categories = [

@@ -69,7 +69,10 @@ export function HistoryBarangMasukTab({
   // Calculate totals
   const totalTransaksi = transaksiMasuk.length;
   const totalQty = transaksiMasuk.reduce((sum, t) => sum + Number(t.qty), 0);
-  const totalNilai = transaksiMasuk.reduce((sum, t) => sum + Number(t.totalNilai), 0);
+  const totalNilai = transaksiMasuk.reduce(
+    (sum, t) => sum + Number(t.totalNilai),
+    0,
+  );
 
   return (
     <div className="space-y-4">
@@ -95,7 +98,10 @@ export function HistoryBarangMasukTab({
             <CardTitle className="text-sm font-medium">Total Qty</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold truncate" title={totalQty.toString()}>
+            <div
+              className="text-2xl font-bold truncate"
+              title={totalQty.toString()}
+            >
               {totalQty.toLocaleString("id-ID")}
             </div>
             <p className="text-xs text-muted-foreground">Unit barang masuk</p>
@@ -106,7 +112,10 @@ export function HistoryBarangMasukTab({
             <CardTitle className="text-sm font-medium">Total Nilai</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold truncate" title={`Rp ${totalNilai.toLocaleString("id-ID")}`}>
+            <div
+              className="text-2xl font-bold truncate"
+              title={`Rp ${totalNilai.toLocaleString("id-ID")}`}
+            >
               Rp {totalNilai.toLocaleString("id-ID")}
             </div>
             <p className="text-xs text-muted-foreground">Nilai pembelian</p>
@@ -217,12 +226,18 @@ export function HistoryBarangMasukTab({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="truncate" title={`Rp ${tr.hargaBeli.toLocaleString("id-ID")}`}>
+                        <div
+                          className="truncate"
+                          title={`Rp ${tr.hargaBeli.toLocaleString("id-ID")}`}
+                        >
                           Rp {tr.hargaBeli.toLocaleString("id-ID")}
                         </div>
                       </TableCell>
                       <TableCell className="font-semibold">
-                        <div className="truncate" title={`Rp ${tr.totalNilai.toLocaleString("id-ID")}`}>
+                        <div
+                          className="truncate"
+                          title={`Rp ${tr.totalNilai.toLocaleString("id-ID")}`}
+                        >
                           Rp {tr.totalNilai.toLocaleString("id-ID")}
                         </div>
                       </TableCell>

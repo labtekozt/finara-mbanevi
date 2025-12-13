@@ -53,7 +53,12 @@ export function AccountingDashboard({
           <Calculator className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold truncate" title={stats.totalAkun.toString()}>{stats.totalAkun}</div>
+          <div
+            className="text-2xl font-bold truncate"
+            title={stats.totalAkun.toString()}
+          >
+            {stats.totalAkun}
+          </div>
           <p className="text-xs text-muted-foreground">
             Akun aktif dalam sistem
           </p>
@@ -66,7 +71,12 @@ export function AccountingDashboard({
           <BookOpen className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold truncate" title={stats.totalJurnal.toString()}>{stats.totalJurnal}</div>
+          <div
+            className="text-2xl font-bold truncate"
+            title={stats.totalJurnal.toString()}
+          >
+            {stats.totalJurnal}
+          </div>
           <p className="text-xs text-muted-foreground">Entri jurnal tercatat</p>
         </CardContent>
       </Card>
@@ -77,7 +87,12 @@ export function AccountingDashboard({
           <FileText className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold truncate" title={stats.periodeAktif}>{stats.periodeAktif}</div>
+          <div
+            className="text-2xl font-bold truncate"
+            title={stats.periodeAktif}
+          >
+            {stats.periodeAktif}
+          </div>
           <p className="text-xs text-muted-foreground">
             Periode akuntansi aktif
           </p>

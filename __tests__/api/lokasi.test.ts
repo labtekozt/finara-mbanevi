@@ -69,7 +69,10 @@ describe("Lokasi API", () => {
 
       (prisma.lokasi.findMany as jest.Mock).mockResolvedValue(mockLokasi);
 
-      const req = new MockNextRequest("GET", "http://localhost:3000/api/lokasi");
+      const req = new MockNextRequest(
+        "GET",
+        "http://localhost:3000/api/lokasi",
+      );
 
       const response = await GET(req as any);
       const data = await response.json();

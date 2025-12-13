@@ -301,12 +301,18 @@ export function DaftarBarangTab({
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div className="truncate" title={`Rp ${item.hargaBeli.toLocaleString("id-ID")}`}>
+                      <div
+                        className="truncate"
+                        title={`Rp ${item.hargaBeli.toLocaleString("id-ID")}`}
+                      >
                         Rp {item.hargaBeli.toLocaleString("id-ID")}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="truncate" title={`Rp ${item.hargaJual.toLocaleString("id-ID")}`}>
+                      <div
+                        className="truncate"
+                        title={`Rp ${item.hargaJual.toLocaleString("id-ID")}`}
+                      >
                         Rp {item.hargaJual.toLocaleString("id-ID")}
                       </div>
                     </TableCell>

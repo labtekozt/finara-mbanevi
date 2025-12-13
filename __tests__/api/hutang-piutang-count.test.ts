@@ -42,7 +42,9 @@ describe("API Hutang Piutang Count", () => {
 
   it("should return 401 if not authenticated", async () => {
     (getServerSession as jest.Mock).mockResolvedValue(null);
-    const req = new MockNextRequest("http://localhost:3000/api/hutang-piutang/count");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/hutang-piutang/count",
+    );
     const res = await GET(req as any);
     expect(res.status).toBe(401);
   });
@@ -51,7 +53,9 @@ describe("API Hutang Piutang Count", () => {
     (prisma.hutang.count as jest.Mock).mockResolvedValue(5);
     (prisma.piutang.count as jest.Mock).mockResolvedValue(3);
 
-    const req = new MockNextRequest("http://localhost:3000/api/hutang-piutang/count");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/hutang-piutang/count",
+    );
     const res = await GET(req as any);
     const data = await res.json();
 

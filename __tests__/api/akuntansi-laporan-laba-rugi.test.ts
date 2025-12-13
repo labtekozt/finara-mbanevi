@@ -51,19 +51,27 @@ describe("API Akuntansi Laporan Laba Rugi", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getServerSession as jest.Mock).mockResolvedValue(mockSession);
-    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(true);
+    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(
+      true,
+    );
   });
 
   it("should return 401 if not authenticated", async () => {
     (getServerSession as jest.Mock).mockResolvedValue(null);
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/laporan/laba-rugi");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/laporan/laba-rugi",
+    );
     const res = await GET(req as any);
     expect(res.status).toBe(401);
   });
 
   it("should return 403 if user has no permission", async () => {
-    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(false);
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/laporan/laba-rugi");
+    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(
+      false,
+    );
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/laporan/laba-rugi",
+    );
     const res = await GET(req as any);
     expect(res.status).toBe(403);
   });
@@ -71,34 +79,46 @@ describe("API Akuntansi Laporan Laba Rugi", () => {
   it("should calculate income statement correctly", async () => {
     // Mock accounts
     const mockAccounts = [
-      { id: "acc-rev-1", kode: "4001", nama: "Sales", tipe: "REVENUE", isActive: true },
-      { id: "acc-exp-1", kode: "5001", nama: "COGS", tipe: "EXPENSE", isActive: true },
+      {
+        id: "acc-rev-1",
+        kode: "4001",
+        nama: "Sales",
+        tipe: "REVENUE",
+        isActive: true,
+      },
+      {
+        id: "acc-exp-1",
+        kode: "5001",
+        nama: "COGS",
+        tipe: "EXPENSE",
+        isActive: true,
+      },
     ];
     (prisma.akun.findMany as jest.Mock).mockResolvedValue(mockAccounts);
 
     // Mock journal details for Revenue (Credit balance)
     // Sales: Credit 1000, Debit 0 -> Balance 1000
-    (prisma.jurnalDetail.findMany as jest.Mock).mockImplementation(async ({ where }) => {
-      if (where.akunId === "acc-rev-1") {
-        return [
-          { debit: mockDecimal(0), kredit: mockDecimal(1000) },
-        ];
-      }
-      if (where.akunId === "acc-exp-1") {
-        // Expense: Debit 500, Credit 0 -> Balance 500
-        return [
-          { debit: mockDecimal(500), kredit: mockDecimal(0) },
-        ];
-      }
-      return [];
-    });
+    (prisma.jurnalDetail.findMany as jest.Mock).mockImplementation(
+      async ({ where }) => {
+        if (where.akunId === "acc-rev-1") {
+          return [{ debit: mockDecimal(0), kredit: mockDecimal(1000) }];
+        }
+        if (where.akunId === "acc-exp-1") {
+          // Expense: Debit 500, Credit 0 -> Balance 500
+          return [{ debit: mockDecimal(500), kredit: mockDecimal(0) }];
+        }
+        return [];
+      },
+    );
 
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/laporan/laba-rugi");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/laporan/laba-rugi",
+    );
     const res = await GET(req as any);
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    
+
     // Check Revenue
     expect(data.revenue.total).toBe(1000);
     expect(data.revenue.entries).toHaveLength(1);
@@ -122,10 +142,14 @@ describe("API Akuntansi Laporan Laba Rugi", () => {
       tanggalMulai: new Date("2024-01-01"),
       tanggalAkhir: new Date("2024-01-31"),
     };
-    (prisma.periodeAkuntansi.findUnique as jest.Mock).mockResolvedValue(mockPeriode);
+    (prisma.periodeAkuntansi.findUnique as jest.Mock).mockResolvedValue(
+      mockPeriode,
+    );
     (prisma.akun.findMany as jest.Mock).mockResolvedValue([]);
 
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/laporan/laba-rugi?periodeId=periode-1");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/laporan/laba-rugi?periodeId=periode-1",
+    );
     await GET(req as any);
 
     expect(prisma.periodeAkuntansi.findUnique).toHaveBeenCalledWith({

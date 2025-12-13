@@ -280,12 +280,18 @@ export function HistoryBarangKeluarTab({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="truncate" title={`Rp ${tr.hargaBarang.toLocaleString("id-ID")}`}>
+                        <div
+                          className="truncate"
+                          title={`Rp ${tr.hargaBarang.toLocaleString("id-ID")}`}
+                        >
                           Rp {tr.hargaBarang.toLocaleString("id-ID")}
                         </div>
                       </TableCell>
                       <TableCell className="font-semibold">
-                        <div className="truncate" title={`Rp ${tr.totalNilai.toLocaleString("id-ID")}`}>
+                        <div
+                          className="truncate"
+                          title={`Rp ${tr.totalNilai.toLocaleString("id-ID")}`}
+                        >
                           Rp {tr.totalNilai.toLocaleString("id-ID")}
                         </div>
                       </TableCell>

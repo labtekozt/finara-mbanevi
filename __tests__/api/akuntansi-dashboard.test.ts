@@ -52,19 +52,27 @@ describe("API Akuntansi Dashboard", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getServerSession as jest.Mock).mockResolvedValue(mockSession);
-    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(true);
+    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(
+      true,
+    );
   });
 
   it("should return 401 if not authenticated", async () => {
     (getServerSession as jest.Mock).mockResolvedValue(null);
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/dashboard");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/dashboard",
+    );
     const res = await GET(req as any);
     expect(res.status).toBe(401);
   });
 
   it("should return 403 if user has no permission", async () => {
-    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(false);
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/dashboard");
+    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(
+      false,
+    );
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/dashboard",
+    );
     const res = await GET(req as any);
     expect(res.status).toBe(403);
   });
@@ -72,8 +80,11 @@ describe("API Akuntansi Dashboard", () => {
   it("should return dashboard data (Balanced)", async () => {
     (prisma.akun.count as jest.Mock).mockResolvedValue(10);
     (prisma.jurnalEntry.count as jest.Mock).mockResolvedValue(5);
-    (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue({ id: "p1", nama: "Jan 2024" });
-    
+    (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue({
+      id: "p1",
+      nama: "Jan 2024",
+    });
+
     // Mock balanced entries
     (prisma.jurnalEntry.findMany as jest.Mock).mockResolvedValue([
       {
@@ -84,7 +95,9 @@ describe("API Akuntansi Dashboard", () => {
       },
     ]);
 
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/dashboard");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/dashboard",
+    );
     const res = await GET(req as any);
     const data = await res.json();
 
@@ -98,8 +111,11 @@ describe("API Akuntansi Dashboard", () => {
   it("should return dashboard data (Unbalanced)", async () => {
     (prisma.akun.count as jest.Mock).mockResolvedValue(10);
     (prisma.jurnalEntry.count as jest.Mock).mockResolvedValue(5);
-    (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue({ id: "p1", nama: "Jan 2024" });
-    
+    (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue({
+      id: "p1",
+      nama: "Jan 2024",
+    });
+
     // Mock unbalanced entries
     (prisma.jurnalEntry.findMany as jest.Mock).mockResolvedValue([
       {
@@ -110,7 +126,9 @@ describe("API Akuntansi Dashboard", () => {
       },
     ]);
 
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/dashboard");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/dashboard",
+    );
     const res = await GET(req as any);
     const data = await res.json();
 

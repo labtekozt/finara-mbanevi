@@ -99,7 +99,11 @@ export function HistoryPenjualanTab({
                 title: "Total Qty Keluar",
                 value: sortedTransaksiKasir.reduce(
                   (sum, tr) =>
-                    sum + tr.itemTransaksi.reduce((s, item) => s + Number(item.qty), 0),
+                    sum +
+                    tr.itemTransaksi.reduce(
+                      (s, item) => s + Number(item.qty),
+                      0,
+                    ),
                   0,
                 ),
                 description: "Unit terjual",
@@ -217,12 +221,18 @@ export function HistoryPenjualanTab({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="truncate" title={`Rp ${item.hargaSatuan.toLocaleString("id-ID")}`}>
+                        <div
+                          className="truncate"
+                          title={`Rp ${item.hargaSatuan.toLocaleString("id-ID")}`}
+                        >
                           Rp {item.hargaSatuan.toLocaleString("id-ID")}
                         </div>
                       </TableCell>
                       <TableCell className="font-semibold">
-                        <div className="truncate" title={`Rp ${item.subtotal.toLocaleString("id-ID")}`}>
+                        <div
+                          className="truncate"
+                          title={`Rp ${item.subtotal.toLocaleString("id-ID")}`}
+                        >
                           Rp {item.subtotal.toLocaleString("id-ID")}
                         </div>
                       </TableCell>

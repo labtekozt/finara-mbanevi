@@ -375,12 +375,18 @@ export default function TransaksiPage() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <div className="truncate" title={`Rp ${tr.hargaBeli.toLocaleString("id-ID")}`}>
+                              <div
+                                className="truncate"
+                                title={`Rp ${tr.hargaBeli.toLocaleString("id-ID")}`}
+                              >
                                 Rp {tr.hargaBeli.toLocaleString("id-ID")}
                               </div>
                             </TableCell>
                             <TableCell className="font-semibold">
-                              <div className="truncate" title={`Rp ${tr.totalNilai.toLocaleString("id-ID")}`}>
+                              <div
+                                className="truncate"
+                                title={`Rp ${tr.totalNilai.toLocaleString("id-ID")}`}
+                              >
                                 Rp {tr.totalNilai.toLocaleString("id-ID")}
                               </div>
                             </TableCell>
@@ -452,9 +458,11 @@ export default function TransaksiPage() {
                     <TrendingDown className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div 
+                    <div
                       className="text-2xl font-bold truncate"
-                      title={sortedTransaksiKeluar.reduce((sum, tr) => sum + Number(tr.qty), 0).toString()}
+                      title={sortedTransaksiKeluar
+                        .reduce((sum, tr) => sum + Number(tr.qty), 0)
+                        .toString()}
                     >
                       {sortedTransaksiKeluar.reduce(
                         (sum, tr) => sum + Number(tr.qty),
@@ -472,7 +480,7 @@ export default function TransaksiPage() {
                     <TrendingDown className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div 
+                    <div
                       className="text-2xl font-bold truncate"
                       title={`Rp ${sortedTransaksiKeluar.reduce((sum, tr) => sum + Number(tr.totalNilai), 0).toLocaleString("id-ID")}`}
                     >
@@ -494,9 +502,13 @@ export default function TransaksiPage() {
                     <TrendingDown className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div 
+                    <div
                       className="text-2xl font-bold truncate"
-                      title={sortedTransaksiKeluar.length > 0 ? `Rp ${(sortedTransaksiKeluar.reduce((sum, tr) => sum + Number(tr.totalNilai), 0) / sortedTransaksiKeluar.length).toLocaleString("id-ID")}` : "Rp 0"}
+                      title={
+                        sortedTransaksiKeluar.length > 0
+                          ? `Rp ${(sortedTransaksiKeluar.reduce((sum, tr) => sum + Number(tr.totalNilai), 0) / sortedTransaksiKeluar.length).toLocaleString("id-ID")}`
+                          : "Rp 0"
+                      }
                     >
                       Rp{" "}
                       {sortedTransaksiKeluar.length > 0
@@ -621,20 +633,22 @@ export default function TransaksiPage() {
                               {format(new Date(tr.tanggal), "dd/MM/yyyy HH:mm")}
                             </TableCell>
                             <TableCell>{tr.barang.nama}</TableCell>
+                            <TableCell>{tr.qty}</TableCell>
                             <TableCell>
-                            <TableCell>
-                              <div className="truncate" title={`Rp ${tr.hargaBarang.toLocaleString("id-ID")}`}>
+                              <div
+                                className="truncate"
+                                title={`Rp ${tr.hargaBarang.toLocaleString("id-ID")}`}
+                              >
                                 Rp {tr.hargaBarang.toLocaleString("id-ID")}
                               </div>
                             </TableCell>
                             <TableCell className="font-semibold">
-                              <div className="truncate" title={`Rp ${tr.totalNilai.toLocaleString("id-ID")}`}>
+                              <div
+                                className="truncate"
+                                title={`Rp ${tr.totalNilai.toLocaleString("id-ID")}`}
+                              >
                                 Rp {tr.totalNilai.toLocaleString("id-ID")}
                               </div>
-                            </TableCell>gaBarang.toLocaleString("id-ID")}
-                            </TableCell>
-                            <TableCell className="font-semibold">
-                              Rp {tr.totalNilai.toLocaleString("id-ID")}
                             </TableCell>
                             <TableCell>{tr.tujuan}</TableCell>
                             <TableCell>{tr.lokasi.namaLokasi}</TableCell>

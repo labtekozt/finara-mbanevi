@@ -66,7 +66,10 @@ describe("Hutang API", () => {
 
       (prisma.hutang.findMany as jest.Mock).mockResolvedValue(mockHutang);
 
-      const req = new MockNextRequest("GET", "http://localhost:3000/api/hutang");
+      const req = new MockNextRequest(
+        "GET",
+        "http://localhost:3000/api/hutang",
+      );
 
       const response = await GET(req as any);
       const data = await response.json();

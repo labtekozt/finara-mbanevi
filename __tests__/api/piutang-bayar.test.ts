@@ -78,20 +78,26 @@ describe("API: /api/piutang/[id]/bayar", () => {
   test("should reject unauthorized requests", async () => {
     (getServerSession as jest.Mock).mockResolvedValue(null);
     // @ts-ignore
-    const req = new (require("next/server").NextRequest)("http://localhost/api/piutang/ptg-1/bayar", {
-      method: "POST",
-      body: JSON.stringify({ jumlahBayar: 10000 }),
-    });
+    const req = new (require("next/server").NextRequest)(
+      "http://localhost/api/piutang/ptg-1/bayar",
+      {
+        method: "POST",
+        body: JSON.stringify({ jumlahBayar: 10000 }),
+      },
+    );
     const res = await POST(req, { params: mockParams });
     expect(res.status).toBe(401);
   });
 
   test("should validate payment amount > 0", async () => {
     // @ts-ignore
-    const req = new (require("next/server").NextRequest)("http://localhost/api/piutang/ptg-1/bayar", {
-      method: "POST",
-      body: JSON.stringify({ jumlahBayar: 0 }),
-    });
+    const req = new (require("next/server").NextRequest)(
+      "http://localhost/api/piutang/ptg-1/bayar",
+      {
+        method: "POST",
+        body: JSON.stringify({ jumlahBayar: 0 }),
+      },
+    );
     const res = await POST(req, { params: mockParams });
     expect(res.status).toBe(400);
     const data = await res.json();
@@ -102,10 +108,13 @@ describe("API: /api/piutang/[id]/bayar", () => {
     (prisma.piutang.findUnique as jest.Mock).mockResolvedValue(null);
 
     // @ts-ignore
-    const req = new (require("next/server").NextRequest)("http://localhost/api/piutang/ptg-1/bayar", {
-      method: "POST",
-      body: JSON.stringify({ jumlahBayar: 10000 }),
-    });
+    const req = new (require("next/server").NextRequest)(
+      "http://localhost/api/piutang/ptg-1/bayar",
+      {
+        method: "POST",
+        body: JSON.stringify({ jumlahBayar: 10000 }),
+      },
+    );
     const res = await POST(req, { params: mockParams });
     expect(res.status).toBe(404);
     const data = await res.json();
@@ -121,10 +130,13 @@ describe("API: /api/piutang/[id]/bayar", () => {
     });
 
     // @ts-ignore
-    const req = new (require("next/server").NextRequest)("http://localhost/api/piutang/ptg-1/bayar", {
-      method: "POST",
-      body: JSON.stringify({ jumlahBayar: 6000 }), // Exceeds 5000
-    });
+    const req = new (require("next/server").NextRequest)(
+      "http://localhost/api/piutang/ptg-1/bayar",
+      {
+        method: "POST",
+        body: JSON.stringify({ jumlahBayar: 6000 }), // Exceeds 5000
+      },
+    );
     const res = await POST(req, { params: mockParams });
     expect(res.status).toBe(400);
     const data = await res.json();
@@ -138,14 +150,19 @@ describe("API: /api/piutang/[id]/bayar", () => {
       totalPiutang: 10000,
       totalBayar: 0,
     });
-    (prisma.pembayaranPiutang.create as jest.Mock).mockResolvedValue({ id: "pay-1" });
+    (prisma.pembayaranPiutang.create as jest.Mock).mockResolvedValue({
+      id: "pay-1",
+    });
     (prisma.piutang.update as jest.Mock).mockResolvedValue({});
 
     // @ts-ignore
-    const req = new (require("next/server").NextRequest)("http://localhost/api/piutang/ptg-1/bayar", {
-      method: "POST",
-      body: JSON.stringify({ jumlahBayar: 5000 }),
-    });
+    const req = new (require("next/server").NextRequest)(
+      "http://localhost/api/piutang/ptg-1/bayar",
+      {
+        method: "POST",
+        body: JSON.stringify({ jumlahBayar: 5000 }),
+      },
+    );
     const res = await POST(req, { params: mockParams });
     expect(res.status).toBe(200);
 
@@ -169,10 +186,13 @@ describe("API: /api/piutang/[id]/bayar", () => {
     });
 
     // @ts-ignore
-    const req = new (require("next/server").NextRequest)("http://localhost/api/piutang/ptg-1/bayar", {
-      method: "POST",
-      body: JSON.stringify({ jumlahBayar: 10000 }),
-    });
+    const req = new (require("next/server").NextRequest)(
+      "http://localhost/api/piutang/ptg-1/bayar",
+      {
+        method: "POST",
+        body: JSON.stringify({ jumlahBayar: 10000 }),
+      },
+    );
     const res = await POST(req, { params: mockParams });
     expect(res.status).toBe(200);
 

@@ -57,19 +57,27 @@ describe("API Akuntansi Laporan Neraca", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getServerSession as jest.Mock).mockResolvedValue(mockSession);
-    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(true);
+    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(
+      true,
+    );
   });
 
   it("should return 401 if not authenticated", async () => {
     (getServerSession as jest.Mock).mockResolvedValue(null);
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/laporan/neraca");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/laporan/neraca",
+    );
     const res = await GET(req as any);
     expect(res.status).toBe(401);
   });
 
   it("should return 403 if user has no permission", async () => {
-    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(false);
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/laporan/neraca");
+    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(
+      false,
+    );
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/laporan/neraca",
+    );
     const res = await GET(req as any);
     expect(res.status).toBe(403);
   });
@@ -77,30 +85,52 @@ describe("API Akuntansi Laporan Neraca", () => {
   it("should calculate balance sheet correctly without period (current state)", async () => {
     // Mock accounts
     const mockAccounts = [
-      { id: "acc-asset-1", kode: "1001", nama: "Cash", tipe: "ASSET", isActive: true },
-      { id: "acc-liab-1", kode: "2001", nama: "Debt", tipe: "LIABILITY", isActive: true },
-      { id: "acc-equity-1", kode: "3001", nama: "Capital", tipe: "EQUITY", isActive: true },
+      {
+        id: "acc-asset-1",
+        kode: "1001",
+        nama: "Cash",
+        tipe: "ASSET",
+        isActive: true,
+      },
+      {
+        id: "acc-liab-1",
+        kode: "2001",
+        nama: "Debt",
+        tipe: "LIABILITY",
+        isActive: true,
+      },
+      {
+        id: "acc-equity-1",
+        kode: "3001",
+        nama: "Capital",
+        tipe: "EQUITY",
+        isActive: true,
+      },
     ];
     (prisma.akun.findMany as jest.Mock).mockResolvedValue(mockAccounts);
 
     // Mock journal details
-    (prisma.jurnalDetail.findMany as jest.Mock).mockImplementation(async ({ where }) => {
-      if (where.akunId === "acc-asset-1") {
-        // Asset: Debit 1000, Credit 200 -> Balance 800
-        return [{ debit: mockDecimal(1000), kredit: mockDecimal(200) }];
-      }
-      if (where.akunId === "acc-liab-1") {
-        // Liability: Credit 500, Debit 100 -> Balance 400
-        return [{ debit: mockDecimal(100), kredit: mockDecimal(500) }];
-      }
-      if (where.akunId === "acc-equity-1") {
-        // Equity: Credit 1000, Debit 0 -> Balance 1000
-        return [{ debit: mockDecimal(0), kredit: mockDecimal(1000) }];
-      }
-      return [];
-    });
+    (prisma.jurnalDetail.findMany as jest.Mock).mockImplementation(
+      async ({ where }) => {
+        if (where.akunId === "acc-asset-1") {
+          // Asset: Debit 1000, Credit 200 -> Balance 800
+          return [{ debit: mockDecimal(1000), kredit: mockDecimal(200) }];
+        }
+        if (where.akunId === "acc-liab-1") {
+          // Liability: Credit 500, Debit 100 -> Balance 400
+          return [{ debit: mockDecimal(100), kredit: mockDecimal(500) }];
+        }
+        if (where.akunId === "acc-equity-1") {
+          // Equity: Credit 1000, Debit 0 -> Balance 1000
+          return [{ debit: mockDecimal(0), kredit: mockDecimal(1000) }];
+        }
+        return [];
+      },
+    );
 
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/laporan/neraca");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/laporan/neraca",
+    );
     const res = await GET(req as any);
     const data = await res.json();
 
@@ -126,10 +156,18 @@ describe("API Akuntansi Laporan Neraca", () => {
       tanggalMulai: new Date("2024-01-01"),
       tanggalAkhir: new Date("2024-01-31"),
     };
-    (prisma.periodeAkuntansi.findUnique as jest.Mock).mockResolvedValue(mockPeriode);
-    
+    (prisma.periodeAkuntansi.findUnique as jest.Mock).mockResolvedValue(
+      mockPeriode,
+    );
+
     const mockAccounts = [
-      { id: "acc-asset-1", kode: "1001", nama: "Cash", tipe: "ASSET", isActive: true },
+      {
+        id: "acc-asset-1",
+        kode: "1001",
+        nama: "Cash",
+        tipe: "ASSET",
+        isActive: true,
+      },
     ];
     (prisma.akun.findMany as jest.Mock).mockResolvedValue(mockAccounts);
 
@@ -143,12 +181,14 @@ describe("API Akuntansi Laporan Neraca", () => {
       { debit: mockDecimal(100), kredit: mockDecimal(0) }, // +100
     ]);
 
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/laporan/neraca?periodeId=periode-1");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/laporan/neraca?periodeId=periode-1",
+    );
     const res = await GET(req as any);
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    
+
     // Asset = Opening (500) + Mutation (100) = 600
     expect(data.assets.total).toBe(600);
     expect(prisma.saldoAwal.findUnique).toHaveBeenCalled();

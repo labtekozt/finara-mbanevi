@@ -106,19 +106,23 @@ describe("API Dashboard", () => {
     (prisma.itemTransaksi.groupBy as jest.Mock).mockResolvedValue([]);
     (prisma.transaksiKasir.groupBy as jest.Mock).mockResolvedValue([]);
 
-    const req = new MockNextRequest("http://localhost:3000/api/dashboard?startDate=2024-01-01&endDate=2024-01-31");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/dashboard?startDate=2024-01-01&endDate=2024-01-31",
+    );
     const res = await GET(req as any);
     const data = await res.json();
 
     expect(res.status).toBe(200);
     expect(data.stats.totalPenjualan).toBe(50000);
-    expect(prisma.transaksiKasir.aggregate).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({
-        tanggal: expect.objectContaining({
-          gte: expect.any(Date),
-          lte: expect.any(Date),
+    expect(prisma.transaksiKasir.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          tanggal: expect.objectContaining({
+            gte: expect.any(Date),
+            lte: expect.any(Date),
+          }),
         }),
       }),
-    }));
+    );
   });
 });

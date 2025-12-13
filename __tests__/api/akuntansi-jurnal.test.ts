@@ -84,7 +84,9 @@ describe("API: /api/akuntansi/jurnal", () => {
     test("should reject unauthorized requests", async () => {
       (getServerSession as jest.Mock).mockResolvedValue(null);
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/akuntansi/jurnal");
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/akuntansi/jurnal",
+      );
       const res = await GET(req);
       expect(res.status).toBe(401);
     });
@@ -92,7 +94,9 @@ describe("API: /api/akuntansi/jurnal", () => {
     test("should reject forbidden requests", async () => {
       (hasPermission as jest.Mock).mockReturnValue(false);
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/akuntansi/jurnal");
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/akuntansi/jurnal",
+      );
       const res = await GET(req);
       expect(res.status).toBe(403);
     });
@@ -103,9 +107,11 @@ describe("API: /api/akuntansi/jurnal", () => {
       (prisma.jurnalEntry.count as jest.Mock).mockResolvedValue(1);
 
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/akuntansi/jurnal?page=1&limit=10");
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/akuntansi/jurnal?page=1&limit=10",
+      );
       const res = await GET(req);
-      
+
       const data = await res.json();
       expect(data.entries).toEqual(mockEntries);
       expect(data.pagination.total).toBe(1);
@@ -125,10 +131,13 @@ describe("API: /api/akuntansi/jurnal", () => {
 
     test("should validate required fields", async () => {
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/akuntansi/jurnal", {
-        method: "POST",
-        body: JSON.stringify({}),
-      });
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/akuntansi/jurnal",
+        {
+          method: "POST",
+          body: JSON.stringify({}),
+        },
+      );
       const res = await POST(req);
       expect(res.status).toBe(400);
       const data = await res.json();
@@ -145,10 +154,13 @@ describe("API: /api/akuntansi/jurnal", () => {
       };
 
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/akuntansi/jurnal", {
-        method: "POST",
-        body: JSON.stringify(unbalancedPayload),
-      });
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/akuntansi/jurnal",
+        {
+          method: "POST",
+          body: JSON.stringify(unbalancedPayload),
+        },
+      );
       const res = await POST(req);
       expect(res.status).toBe(400);
       const data = await res.json();
@@ -159,10 +171,13 @@ describe("API: /api/akuntansi/jurnal", () => {
       (prisma.periodeAkuntansi.findUnique as jest.Mock).mockResolvedValue(null);
 
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/akuntansi/jurnal", {
-        method: "POST",
-        body: JSON.stringify(validPayload),
-      });
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/akuntansi/jurnal",
+        {
+          method: "POST",
+          body: JSON.stringify(validPayload),
+        },
+      );
       const res = await POST(req);
       expect(res.status).toBe(400);
       const data = await res.json();
@@ -180,13 +195,16 @@ describe("API: /api/akuntansi/jurnal", () => {
       });
 
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/akuntansi/jurnal", {
-        method: "POST",
-        body: JSON.stringify(validPayload),
-      });
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/akuntansi/jurnal",
+        {
+          method: "POST",
+          body: JSON.stringify(validPayload),
+        },
+      );
       const res = await POST(req);
       expect(res.status).toBe(201);
-      
+
       expect(prisma.jurnalEntry.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -198,7 +216,7 @@ describe("API: /api/akuntansi/jurnal", () => {
               ]),
             },
           }),
-        })
+        }),
       );
     });
   });

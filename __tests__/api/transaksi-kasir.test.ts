@@ -98,23 +98,29 @@ describe("API: /api/transaksi-kasir", () => {
     test("should reject unauthorized requests", async () => {
       (getServerSession as jest.Mock).mockResolvedValue(null);
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/transaksi-kasir", {
-        method: "POST",
-        body: JSON.stringify({}),
-      });
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/transaksi-kasir",
+        {
+          method: "POST",
+          body: JSON.stringify({}),
+        },
+      );
       const res = await POST(req);
       expect(res.status).toBe(401);
     });
 
     test("should validate required fields", async () => {
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/transaksi-kasir", {
-        method: "POST",
-        body: JSON.stringify({
-          // Missing items and totals
-          metodePembayaran: "cash",
-        }),
-      });
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/transaksi-kasir",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            // Missing items and totals
+            metodePembayaran: "cash",
+          }),
+        },
+      );
       const res = await POST(req);
       expect(res.status).toBe(400);
       const data = await res.json();
@@ -123,42 +129,48 @@ describe("API: /api/transaksi-kasir", () => {
 
     test("should reject empty items array", async () => {
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/transaksi-kasir", {
-        method: "POST",
-        body: JSON.stringify({
-          items: [],
-          subtotal: 1000,
-          total: 1000,
-          metodePembayaran: "cash",
-          jumlahBayar: 1000,
-          kembalian: 0,
-        }),
-      });
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/transaksi-kasir",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            items: [],
+            subtotal: 1000,
+            total: 1000,
+            metodePembayaran: "cash",
+            jumlahBayar: 1000,
+            kembalian: 0,
+          }),
+        },
+      );
       const res = await POST(req);
       expect(res.status).toBe(400);
     });
 
     test("should reject negative quantities", async () => {
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/transaksi-kasir", {
-        method: "POST",
-        body: JSON.stringify({
-          items: [
-            {
-              barangId: "b1",
-              namaBarang: "Item 1",
-              hargaSatuan: 1000,
-              qty: -1, // Negative
-              subtotal: -1000,
-            },
-          ],
-          subtotal: -1000,
-          total: -1000,
-          metodePembayaran: "cash",
-          jumlahBayar: 0,
-          kembalian: 0,
-        }),
-      });
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/transaksi-kasir",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            items: [
+              {
+                barangId: "b1",
+                namaBarang: "Item 1",
+                hargaSatuan: 1000,
+                qty: -1, // Negative
+                subtotal: -1000,
+              },
+            ],
+            subtotal: -1000,
+            total: -1000,
+            metodePembayaran: "cash",
+            jumlahBayar: 0,
+            kembalian: 0,
+          }),
+        },
+      );
       const res = await POST(req);
       expect(res.status).toBe(400);
     });
@@ -187,7 +199,7 @@ describe("API: /api/transaksi-kasir", () => {
     test("should process valid transaction successfully", async () => {
       // Mock successful stock update
       (prisma.barang.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
-      
+
       // Mock transaction creation
       (prisma.transaksiKasir.create as jest.Mock).mockResolvedValue({
         id: "trx-1",
@@ -209,13 +221,16 @@ describe("API: /api/transaksi-kasir", () => {
       });
 
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/transaksi-kasir", {
-        method: "POST",
-        body: JSON.stringify(validPayload),
-      });
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/transaksi-kasir",
+        {
+          method: "POST",
+          body: JSON.stringify(validPayload),
+        },
+      );
 
       const res = await POST(req);
-      
+
       expect(res.status).toBe(201);
       expect(prisma.barang.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -226,7 +241,7 @@ describe("API: /api/transaksi-kasir", () => {
           data: {
             stok: { decrement: 2 },
           },
-        })
+        }),
       );
       expect(createJournalEntryForCompleteSale).toHaveBeenCalled();
     });
@@ -234,7 +249,7 @@ describe("API: /api/transaksi-kasir", () => {
     test("should fail if stock is insufficient", async () => {
       // Mock failed stock update (count: 0)
       (prisma.barang.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
-      
+
       // Mock finding barang to show current stock
       (prisma.barang.findUnique as jest.Mock).mockResolvedValue({
         id: "b1",
@@ -243,13 +258,16 @@ describe("API: /api/transaksi-kasir", () => {
       });
 
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/transaksi-kasir", {
-        method: "POST",
-        body: JSON.stringify(validPayload),
-      });
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/transaksi-kasir",
+        {
+          method: "POST",
+          body: JSON.stringify(validPayload),
+        },
+      );
 
       const res = await POST(req);
-      
+
       expect(res.status).toBe(400);
       const data = await res.json();
       expect(data.error).toContain("Stok");
@@ -263,7 +281,9 @@ describe("API: /api/transaksi-kasir", () => {
       };
 
       (prisma.barang.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
-      (prisma.transaksiKasir.create as jest.Mock).mockResolvedValue({ id: "trx-1" });
+      (prisma.transaksiKasir.create as jest.Mock).mockResolvedValue({
+        id: "trx-1",
+      });
       (prisma.barang.findUnique as jest.Mock).mockResolvedValue({
         id: "b1",
         hargaBeli: { toNumber: () => 5000 },
@@ -271,10 +291,13 @@ describe("API: /api/transaksi-kasir", () => {
       (prisma.transaksiKasir.findUnique as jest.Mock).mockResolvedValue({});
 
       // @ts-ignore
-      const req = new (require("next/server").NextRequest)("http://localhost/api/transaksi-kasir", {
-        method: "POST",
-        body: JSON.stringify(creditPayload),
-      });
+      const req = new (require("next/server").NextRequest)(
+        "http://localhost/api/transaksi-kasir",
+        {
+          method: "POST",
+          body: JSON.stringify(creditPayload),
+        },
+      );
 
       await POST(req);
 
@@ -285,7 +308,7 @@ describe("API: /api/transaksi-kasir", () => {
             status: "BELUM_LUNAS",
             totalPiutang: 20000,
           }),
-        })
+        }),
       );
     });
   });

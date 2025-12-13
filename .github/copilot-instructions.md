@@ -40,6 +40,7 @@
   - **Arithmetic:** Convert to number for calculations: `item.harga.toNumber() * item.qty`.
   - **Serialization:** Use `serializeDecimal(data)` from `@/lib/utils` before returning JSON responses (Next.js cannot serialize Decimal).
 - **Atomic Operations:** Use `prisma.$transaction` for any operation affecting multiple tables (e.g., Sales + Inventory + Accounting).
+  - **Stock Updates:** Use `updateMany` with `where: { stok: { gte: qty } }` to ensure atomic stock checks and prevent negative inventory.
 - **Optimization:** Prefer `select` over `include` to reduce payload size.
 - **Transaction Numbering:** Use `lib/transaction-number.ts` for auto-generating unique transaction IDs.
 
@@ -70,12 +71,20 @@
 - **Routing:** Protected routes in `app/(dashboard)/`, public routes in root `app/`.
 - **Layout:** Use `Providers` in root layout for session and toast management.
 
-## 🧪 Testing & Quality
+## 🧪 Testing Strategy
 
-- **Unit Tests:** Run `npm test` for logic verification (Jest).
-- **Type Checking:** Run `npm run check-types` to verify TypeScript types (especially Decimal vs number).
-- **Linting:** Run `npm run lint` to check for issues.
-- **Formatting:** Run `npm run format` (Prettier) before committing.
+- **Framework:** Jest with `ts-jest`.
+- **Integration Tests:** Located in `__tests__/`. Focus on E2E flows (API -> DB -> Accounting).
+- **Mocking Prisma:**
+  - **Transactions:** Mock `$transaction` to execute the callback immediately: `(prisma.$transaction as jest.Mock).mockImplementation((cb) => cb(prisma))`.
+  - **Delegates:** Mock specific delegates used in the route (e.g., `transaksiKasir`, `transaksiMasuk`, `jurnalEntry`).
+  - **Decimals:** Mock Decimal fields in return values as objects with `toNumber()`: `{ hargaBeli: { toNumber: () => 5000 } }`.
+- **Atomic Updates:** When testing stock updates, mock `updateMany` to return `{ count: 1 }` to simulate successful atomic updates.
+- **Reference:** See `__tests__/integration-kasir-inventory.test.ts` for a complete example of mocking complex transaction flows.
+- **Commands:**
+  - `npm test`: Run all tests.
+  - `npm test <filename>`: Run specific test file.
+  - `npm run check-types`: Verify TypeScript types.
 
 ## 🚀 Common Commands
 

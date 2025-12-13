@@ -69,19 +69,27 @@ describe("API Akuntansi Trial Balance", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getServerSession as jest.Mock).mockResolvedValue(mockSession);
-    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(true);
+    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(
+      true,
+    );
   });
 
   it("should return 401 if not authenticated", async () => {
     (getServerSession as jest.Mock).mockResolvedValue(null);
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/trial-balance");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/trial-balance",
+    );
     const res = await GET(req as any);
     expect(res.status).toBe(401);
   });
 
   it("should return 403 if user has no permission", async () => {
-    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(false);
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/trial-balance");
+    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(
+      false,
+    );
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/trial-balance",
+    );
     const res = await GET(req as any);
     expect(res.status).toBe(403);
   });
@@ -89,30 +97,46 @@ describe("API Akuntansi Trial Balance", () => {
   it("should calculate trial balance correctly", async () => {
     // Mock accounts
     const mockAccounts = [
-      { id: "acc-asset-1", kode: "1001", nama: "Cash", tipe: "ASSET", isActive: true },
-      { id: "acc-rev-1", kode: "4001", nama: "Sales", tipe: "REVENUE", isActive: true },
+      {
+        id: "acc-asset-1",
+        kode: "1001",
+        nama: "Cash",
+        tipe: "ASSET",
+        isActive: true,
+      },
+      {
+        id: "acc-rev-1",
+        kode: "4001",
+        nama: "Sales",
+        tipe: "REVENUE",
+        isActive: true,
+      },
     ];
     (prisma.akun.findMany as jest.Mock).mockResolvedValue(mockAccounts);
 
     // Mock journal details
-    (prisma.jurnalDetail.findMany as jest.Mock).mockImplementation(async ({ where }) => {
-      if (where.akunId === "acc-asset-1") {
-        // Asset: Debit 1000, Credit 0 -> Balance 1000 (Positive)
-        return [{ debit: mockDecimal(1000), kredit: mockDecimal(0) }];
-      }
-      if (where.akunId === "acc-rev-1") {
-        // Revenue: Credit 1000, Debit 0 -> Balance 1000 (Negative in Trial Balance logic)
-        return [{ debit: mockDecimal(0), kredit: mockDecimal(1000) }];
-      }
-      return [];
-    });
+    (prisma.jurnalDetail.findMany as jest.Mock).mockImplementation(
+      async ({ where }) => {
+        if (where.akunId === "acc-asset-1") {
+          // Asset: Debit 1000, Credit 0 -> Balance 1000 (Positive)
+          return [{ debit: mockDecimal(1000), kredit: mockDecimal(0) }];
+        }
+        if (where.akunId === "acc-rev-1") {
+          // Revenue: Credit 1000, Debit 0 -> Balance 1000 (Negative in Trial Balance logic)
+          return [{ debit: mockDecimal(0), kredit: mockDecimal(1000) }];
+        }
+        return [];
+      },
+    );
 
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/trial-balance");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/trial-balance",
+    );
     const res = await GET(req as any);
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    
+
     // Check Asset
     const assetEntry = data.entries.find((e: any) => e.akun.kode === "1001");
     expect(assetEntry.saldoAkhir).toBe(1000);
@@ -133,10 +157,18 @@ describe("API Akuntansi Trial Balance", () => {
       tanggalMulai: new Date("2024-01-01"),
       tanggalAkhir: new Date("2024-01-31"),
     };
-    (prisma.periodeAkuntansi.findUnique as jest.Mock).mockResolvedValue(mockPeriode);
-    
+    (prisma.periodeAkuntansi.findUnique as jest.Mock).mockResolvedValue(
+      mockPeriode,
+    );
+
     const mockAccounts = [
-      { id: "acc-asset-1", kode: "1001", nama: "Cash", tipe: "ASSET", isActive: true },
+      {
+        id: "acc-asset-1",
+        kode: "1001",
+        nama: "Cash",
+        tipe: "ASSET",
+        isActive: true,
+      },
     ];
     (prisma.akun.findMany as jest.Mock).mockResolvedValue(mockAccounts);
 
@@ -150,12 +182,14 @@ describe("API Akuntansi Trial Balance", () => {
       { debit: mockDecimal(100), kredit: mockDecimal(0) },
     ]);
 
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/trial-balance?periodeId=periode-1");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/trial-balance?periodeId=periode-1",
+    );
     const res = await GET(req as any);
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    
+
     // Asset = Opening (500) + Mutation (100) = 600
     const assetEntry = data.entries[0];
     expect(assetEntry.saldoAwal).toBe(500);

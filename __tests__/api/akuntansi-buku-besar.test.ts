@@ -48,38 +48,55 @@ describe("API Akuntansi Buku Besar", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getServerSession as jest.Mock).mockResolvedValue(mockSession);
-    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(true);
+    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(
+      true,
+    );
   });
 
   it("should return 401 if not authenticated", async () => {
     (getServerSession as jest.Mock).mockResolvedValue(null);
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/buku-besar");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/buku-besar",
+    );
     const res = await GET(req as any);
     expect(res.status).toBe(401);
   });
 
   it("should return 403 if user has no permission", async () => {
-    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(false);
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/buku-besar");
+    (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(
+      false,
+    );
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/buku-besar",
+    );
     const res = await GET(req as any);
     expect(res.status).toBe(403);
   });
 
   it("should return 400 if akunId is missing", async () => {
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/buku-besar");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/buku-besar",
+    );
     const res = await GET(req as any);
     expect(res.status).toBe(400);
   });
 
   it("should return 404 if account not found", async () => {
     (prisma.akun.findUnique as jest.Mock).mockResolvedValue(null);
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/buku-besar?akunId=acc-1");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/buku-besar?akunId=acc-1",
+    );
     const res = await GET(req as any);
     expect(res.status).toBe(404);
   });
 
   it("should return general ledger with running balance", async () => {
-    const mockAccount = { id: "acc-1", kode: "1001", nama: "Cash", tipe: "ASSET" };
+    const mockAccount = {
+      id: "acc-1",
+      kode: "1001",
+      nama: "Cash",
+      tipe: "ASSET",
+    };
     (prisma.akun.findUnique as jest.Mock).mockResolvedValue(mockAccount);
 
     const mockDetails = [
@@ -116,16 +133,18 @@ describe("API Akuntansi Buku Besar", () => {
     ];
     (prisma.jurnalDetail.findMany as jest.Mock).mockResolvedValue(mockDetails);
 
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/buku-besar?akunId=acc-1");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/buku-besar?akunId=acc-1",
+    );
     const res = await GET(req as any);
     const data = await res.json();
 
     expect(res.status).toBe(200);
     expect(data.entries).toHaveLength(2);
-    
+
     // Entry 1: +1000 -> Balance 1000
     expect(data.entries[0].saldo).toBe(1000);
-    
+
     // Entry 2: -200 -> Balance 800
     expect(data.entries[1].saldo).toBe(800);
 
@@ -133,7 +152,12 @@ describe("API Akuntansi Buku Besar", () => {
   });
 
   it("should calculate opening balance when startDate is provided", async () => {
-    const mockAccount = { id: "acc-1", kode: "1001", nama: "Cash", tipe: "ASSET" };
+    const mockAccount = {
+      id: "acc-1",
+      kode: "1001",
+      nama: "Cash",
+      tipe: "ASSET",
+    };
     (prisma.akun.findUnique as jest.Mock).mockResolvedValue(mockAccount);
 
     // Mock findMany calls
@@ -161,7 +185,9 @@ describe("API Akuntansi Buku Besar", () => {
         { debit: mockDecimal(500), kredit: mockDecimal(0) }, // Opening: 500
       ]);
 
-    const req = new MockNextRequest("http://localhost:3000/api/akuntansi/buku-besar?akunId=acc-1&startDate=2024-02-01&endDate=2024-02-29");
+    const req = new MockNextRequest(
+      "http://localhost:3000/api/akuntansi/buku-besar?akunId=acc-1&startDate=2024-02-01&endDate=2024-02-29",
+    );
     const res = await GET(req as any);
     const data = await res.json();
 
