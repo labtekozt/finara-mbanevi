@@ -13,10 +13,11 @@
 
 - **Dashboard:** Overview with real-time stats (sales, transactions, low stock), recent activity
 - **Kasir (POS):** Point of sale with cart, payment processing, automatic inventory updates and journal entries. Supports pending pickup (`belumDiambil`) with customer info tracking.
-- **Inventaris:** Product management with CRUD, multi-location support, stock alerts
-- **Transaksi:** Goods in/out transactions with auto-numbering, history tracking
-- **Akuntansi:** Accounting module with journals, financial statements, trial balance, period closing
-- **Hutang & Piutang:** Debt and receivables management with status tracking (`BELUM_LUNAS`, `LUNAS`, `JATUH_TEMPO`)
+- **Inventaris:** Product management with CRUD, multi-location support, stock alerts.
+- **Stock Opname:** Inventory adjustment module with approval workflows and automatic journal entries (Inventory vs Other Revenue/Expense).
+- **Transaksi:** Goods in/out transactions with auto-numbering, history tracking.
+- **Akuntansi:** Accounting module with journals, financial statements (Neraca, Laba Rugi), trial balance, period closing, and initial capital calculation.
+- **Hutang & Piutang:** Debt and receivables management with status tracking (`BELUM_LUNAS`, `LUNAS`, `JATUH_TEMPO`).
 
 ## 👥 User Roles & Permissions
 
@@ -31,13 +32,21 @@
   - **Pattern:** Always use `select: { id: true, nama: true, username: true }` in Prisma queries.
   - **Anti-Pattern:** `include: { user: true }` (leaks password hash).
 - **Authorization:** Verify session and permissions in every API route using `getServerSession` and `hasPermission`.
+- **Session Validation (Zombie Sessions):** Always verify the user exists in the DB after checking the session, as the session token might persist after a DB reset.
+  ```typescript
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  
+  const userExists = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (!userExists) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+  ```
 - **Logging:** Use `logger` from `@/lib/logger` instead of `console.log` or `console.error`.
-  - **Pattern:** `logger.info("Transaction created", { id: tx.id })` or `logger.error("Failed to process", error)`.
 
 ## 💾 Database & Transactions
 
 - **Numeric Type:** All monetary and quantity fields use `Decimal` in Prisma (`@db.Decimal(15, 2)`).
-  - **Arithmetic:** Convert to number for calculations: `item.harga.toNumber() * item.qty`.
+  - **Arithmetic:** PREFER `Prisma.Decimal` methods (`plus`, `minus`, `times`, `div`) for all financial calculations to avoid floating-point errors.
+  - **Pattern:** `const total = decimalValue.plus(otherDecimal).times(qty);`
   - **Serialization:** Use `serializeDecimal(data)` from `@/lib/utils` before returning JSON responses (Next.js cannot serialize Decimal).
 - **Atomic Operations:** Use `prisma.$transaction` for any operation affecting multiple tables (e.g., Sales + Inventory + Accounting).
   - **Stock Updates:** Use `updateMany` with `where: { stok: { gte: qty } }` to ensure atomic stock checks and prevent negative inventory.
@@ -57,8 +66,11 @@
 ## 💰 Accounting & Financials
 
 - **Double-Entry:** All financial transactions must create corresponding `JurnalEntry` records.
-- **Helpers:** Use `lib/accounting-utils.ts` for creating journal entries (e.g., `createJournalEntryForSale`, `createJournalEntryForExpense`).
+- **Helpers:** Use `lib/accounting-utils.ts` for creating journal entries (e.g., `createJournalEntryForSale`, `createJournalEntryForStockAdjustment`).
 - **Consistency:** Ensure `debit` and `kredit` totals always balance.
+- **Reporting:**
+  - **Trial Balance:** Sum `Prisma.Decimal` values first, then convert to number.
+  - **Balance Sheet:** Respect signed balances (Assets = Liabilities + Equity). Negative assets (e.g., overdraft) should reduce total assets, not increase them.
 - **Audit Trail:** All changes logged via `ActivityLog` model and `audit-logger.ts`.
 
 ## 🧩 Frontend Development
@@ -90,7 +102,7 @@
 
 - `npm run dev`: Start development server
 - `npm run build`: Full build (Format -> Check Types -> Next Build)
-- `npx prisma generate`: Regenerate Prisma client (run after schema changes)
-- `npx prisma db push`: Apply schema changes to database
+- `npm run db:generate`: Regenerate Prisma client (run after schema changes)
+- `npm run db:push`: Apply schema changes to database
 - `npm run db:seed`: Populate database with initial data
 - `npm run db:studio`: Open Prisma Studio GUI
