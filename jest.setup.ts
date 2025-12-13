@@ -1,8 +1,14 @@
 import "@testing-library/jest-dom";
 
+// Polyfill setImmediate for Prisma/Jest compatibility
+if (typeof setImmediate === "undefined") {
+  (global as any).setImmediate = (callback: (...args: any[]) => void) =>
+    setTimeout(callback, 0);
+}
+
 // Mock Prisma client
-jest.mock("@/lib/prisma", () => ({
-  prisma: {
+jest.mock("@/lib/prisma", () => {
+  const mockPrisma: any = {
     financialAuditLog: {
       create: jest.fn(),
       findMany: jest.fn(),
@@ -10,10 +16,50 @@ jest.mock("@/lib/prisma", () => ({
       update: jest.fn(),
       delete: jest.fn(),
     },
-    // Add other models as needed
-    $transaction: jest.fn(),
-  },
-}));
+    periodeAkuntansi: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+    akun: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+    jurnalEntry: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+    jurnalDetail: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+    $transaction: jest.fn((arg) => {
+      if (Array.isArray(arg)) {
+        return Promise.all(arg);
+      }
+      if (typeof arg === "function") {
+        return arg(mockPrisma);
+      }
+      return Promise.resolve(arg);
+    }),
+  };
+  return { prisma: mockPrisma };
+});
 
 // Mock Next.js router
 jest.mock("next/navigation", () => ({

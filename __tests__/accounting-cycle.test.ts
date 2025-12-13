@@ -2,6 +2,14 @@ import { FinancialValidator } from "@/lib/financial-validator";
 import { AuditLogger } from "@/lib/audit-logger";
 import { prisma } from "@/lib/prisma";
 
+// Mock logger to avoid cluttering test output
+jest.mock("@/lib/logger", () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  log: jest.fn(),
+}));
+
 describe("Accounting Cycle Validation", () => {
   describe("Journal Entry Validation", () => {
     test("should validate that journal entries have balanced debits and credits", () => {
