@@ -49,7 +49,7 @@ export async function GET(request: Request) {
               },
             },
           });
-          saldoAwal = openingBalance?.saldo || 0;
+          saldoAwal = openingBalance?.saldo.toNumber() || 0;
         } else {
           // For all periods, opening balance is 0 (or we could calculate from all historical transactions)
           saldoAwal = 0;
@@ -78,8 +78,8 @@ export async function GET(request: Request) {
         });
 
         for (const detail of mutationDetails) {
-          mutasiDebit += detail.debit;
-          mutasiKredit += detail.kredit;
+          mutasiDebit += detail.debit.toNumber();
+          mutasiKredit += detail.kredit.toNumber();
         }
 
         // Calculate ending balance based on account type and normal balance

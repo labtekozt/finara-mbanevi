@@ -84,22 +84,36 @@ export async function GET(
         detail.deskripsi?.includes("Penutupan akun pendapatan"),
       );
       if (retainedEarningsDetail) {
-        netIncome += retainedEarningsDetail.debit;
+        netIncome += retainedEarningsDetail.debit.toNumber();
       }
 
       const expenseClosingDetail = entry.details.find((detail) =>
         detail.deskripsi?.includes("Penutupan akun beban"),
       );
       if (expenseClosingDetail) {
-        netIncome -= expenseClosingDetail.kredit;
+        netIncome -= expenseClosingDetail.kredit.toNumber();
       }
     }
+
+    const mappedClosingEntries = closingEntries.map((entry) => ({
+      ...entry,
+      details: entry.details.map((detail) => ({
+        ...detail,
+        debit: detail.debit.toNumber(),
+        kredit: detail.kredit.toNumber(),
+      })),
+    }));
+
+    const mappedOpeningBalances = openingBalances.map((balance) => ({
+      ...balance,
+      saldo: balance.saldo.toNumber(),
+    }));
 
     const result: PeriodClosingData = {
       periodeId,
       periode,
-      closingEntries,
-      openingBalances,
+      closingEntries: mappedClosingEntries as any,
+      openingBalances: mappedOpeningBalances as any,
       netIncome,
       status: "completed",
       closedAt: periode.updatedAt?.toISOString(),

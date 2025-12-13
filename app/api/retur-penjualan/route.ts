@@ -100,9 +100,9 @@ export async function GET(request: NextRequest) {
           : 0,
       hargaJual:
         transaksi.itemTransaksi.length > 0
-          ? transaksi.itemTransaksi[0].hargaSatuan
+          ? transaksi.itemTransaksi[0].hargaSatuan.toNumber()
           : 0,
-      totalNilai: Math.abs(transaksi.total),
+      totalNilai: Math.abs(transaksi.total.toNumber()),
       pelanggan: transaksi.catatan?.replace("RETUR: ", "") || "Umum",
       keterangan: transaksi.catatan || "",
     }));
@@ -198,8 +198,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      totalRevenue += returnItem.qty * originalItem.hargaSatuan;
-      totalCOGS += returnItem.qty * originalItem.barang.hargaBeli;
+      totalRevenue += returnItem.qty * originalItem.hargaSatuan.toNumber();
+      totalCOGS += returnItem.qty * originalItem.barang.hargaBeli.toNumber();
     }
 
     // Create return transaction and update stock
@@ -232,9 +232,9 @@ export async function POST(request: NextRequest) {
             transaksiKasirId: returnTransaksi.id,
             barangId: returnItem.barangId,
             namaBarang: originalItem!.namaBarang,
-            hargaSatuan: -originalItem!.hargaSatuan, // Negative for return
+            hargaSatuan: -originalItem!.hargaSatuan.toNumber(), // Negative for return
             qty: -returnItem.qty, // Negative for return
-            subtotal: -(returnItem.qty * originalItem!.hargaSatuan),
+            subtotal: -(returnItem.qty * originalItem!.hargaSatuan.toNumber()),
           },
         });
 

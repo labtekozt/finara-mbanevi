@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { generateTransactionNumber } from "@/lib/transaction-number";
 import { createJournalEntryForStockAdjustment } from "@/lib/accounting-utils";
 import { z } from "zod";
+import logger from "@/lib/logger";
 
 const stockOpnameSchema = z.object({
   barangId: z.string().min(1, "Barang harus dipilih"),
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(adjustments);
   } catch (error) {
-    console.error("Error fetching stock adjustments:", error);
+    logger.error("Error fetching stock adjustments:", error);
     return NextResponse.json(
       { error: "Failed to fetch stock adjustments" },
       { status: 500 },
@@ -99,7 +100,8 @@ export async function POST(request: NextRequest) {
     }
 
     const adjustmentQty = validatedData.stokFisik - validatedData.stokSistem;
-    const adjustmentAmount = Math.abs(adjustmentQty) * barang.hargaBeli;
+    const adjustmentAmount =
+      Math.abs(adjustmentQty) * barang.hargaBeli.toNumber();
     const isIncrease = adjustmentQty > 0;
 
     // Create adjustment transaction and update stock
@@ -161,7 +163,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    console.error("Error creating stock adjustment:", error);
+    logger.error("Error creating stock adjustment:", error);
     return NextResponse.json(
       { error: "Failed to create stock adjustment" },
       { status: 500 },

@@ -91,12 +91,26 @@ DATABASE_URL="postgresql://postgres:password123@localhost:5432/finara_db?schema=
 # NextAuth Configuration
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="ganti-dengan-random-string-yang-panjang-dan-aman"
+
+# Logging Configuration (Optional)
+# LOG_LEVEL=info # debug, info, warn, error
 ```
 
 **Penting:**
 
 - Ganti `password123` dengan password PostgreSQL Anda
 - Ganti `NEXTAUTH_SECRET` dengan string random yang aman
+
+## 📝 Logging System
+
+Aplikasi ini menggunakan `winston` untuk structured logging.
+
+- **Development:** Log ditampilkan di console dengan warna.
+- **Production:** Log disimpan di folder `logs/` dengan rotasi harian.
+  - `logs/error-%DATE%.log`: Hanya log error.
+  - `logs/combined-%DATE%.log`: Semua log.
+
+Anda dapat mengatur level log melalui environment variable `LOG_LEVEL`.
 
 Untuk generate `NEXTAUTH_SECRET`, gunakan:
 

@@ -132,7 +132,7 @@ export async function POST(request: Request) {
           action: "CREATE",
           entity: "PENGELUARAN",
           entityId: pengeluaran.id,
-          description: `Created expense: ${pengeluaran.deskripsi} - Rp ${pengeluaran.jumlah.toLocaleString("id-ID")}`,
+          description: `Created expense: ${pengeluaran.deskripsi} - Rp ${pengeluaran.jumlah.toNumber().toLocaleString("id-ID")}`,
         },
       });
 

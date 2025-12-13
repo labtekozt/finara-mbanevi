@@ -88,7 +88,8 @@ export async function POST(
         });
 
         const balance = details.reduce(
-          (sum, detail) => sum + detail.kredit - detail.debit,
+          (sum, detail) =>
+            sum + detail.kredit.toNumber() - detail.debit.toNumber(),
           0,
         );
         return { akun, balance };
@@ -106,7 +107,8 @@ export async function POST(
         });
 
         const balance = details.reduce(
-          (sum, detail) => sum + detail.debit - detail.kredit,
+          (sum, detail) =>
+            sum + detail.debit.toNumber() - detail.kredit.toNumber(),
           0,
         );
         return { akun, balance };
@@ -268,9 +270,9 @@ export async function POST(
             let balance = 0;
             for (const detail of details) {
               if (akun.tipe === "ASSET" || akun.tipe === "EXPENSE") {
-                balance += detail.debit - detail.kredit;
+                balance += detail.debit.toNumber() - detail.kredit.toNumber();
               } else {
-                balance += detail.kredit - detail.debit;
+                balance += detail.kredit.toNumber() - detail.debit.toNumber();
               }
             }
 

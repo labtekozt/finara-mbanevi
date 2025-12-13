@@ -11,14 +11,14 @@ export class FinancialReportGenerator {
     const inventoryIn = await prisma.transaksiMasuk.findMany();
     let totalInventoryIn = 0;
     for (const trans of inventoryIn) {
-      totalInventoryIn += trans.totalNilai;
+      totalInventoryIn += trans.totalNilai.toNumber();
     }
 
     // Hitung total inventory keluar (COGS)
     const inventoryOut = await prisma.transaksiKeluar.findMany();
     let totalInventoryOut = 0;
     for (const trans of inventoryOut) {
-      totalInventoryOut += trans.totalNilai || 0;
+      totalInventoryOut += trans.totalNilai.toNumber() || 0;
     }
 
     // Hitung inventory fisik saat ini
@@ -32,7 +32,7 @@ export class FinancialReportGenerator {
     let totalCOGS = 0;
     for (const trans of salesTransactions) {
       for (const item of trans.itemTransaksi) {
-        totalCOGS += item.qty * item.hargaSatuan;
+        totalCOGS += item.qty * item.hargaSatuan.toNumber();
       }
     }
 
@@ -57,7 +57,7 @@ export class FinancialReportGenerator {
     let totalCash = 0;
     for (const trans of salesTransactions) {
       for (const item of trans.itemTransaksi) {
-        totalCash += item.qty * item.hargaSatuan;
+        totalCash += item.qty * item.hargaSatuan.toNumber();
       }
     }
 

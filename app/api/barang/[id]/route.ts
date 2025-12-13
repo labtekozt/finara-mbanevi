@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { createJournalEntryForStockAdjustment } from "@/lib/accounting-utils";
 import { z } from "zod";
+import { serializeDecimal } from "@/lib/utils";
 
 const barangSchema = z.object({
   nama: z.string().min(1, "Nama barang harus diisi"),
@@ -41,9 +42,9 @@ export async function GET(
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
 
-    return NextResponse.json(barang);
+    return NextResponse.json(serializeDecimal(barang));
   } catch (error) {
-    console.error("Error fetching barang:", error);
+    console.error("Error fetching item:", error);
     return NextResponse.json(
       { error: "Failed to fetch item" },
       { status: 500 },
@@ -88,7 +89,7 @@ export async function PUT(
     if (stockDifference !== 0) {
       try {
         const adjustmentAmount =
-          Math.abs(stockDifference) * currentBarang.hargaBeli;
+          Math.abs(stockDifference) * currentBarang.hargaBeli.toNumber();
         const isIncrease = stockDifference > 0;
 
         await createJournalEntryForStockAdjustment(

@@ -59,8 +59,8 @@ model Barang {
   kategori     String
   stok         Int      @default(0)
   stokMinimum  Int      @default(10)
-  hargaBeli    Float
-  hargaJual    Float
+  hargaBeli    Decimal  @db.Decimal(15, 2)
+  hargaJual    Decimal  @db.Decimal(15, 2)
   satuan       String   @default("pcs")
   deskripsi    String?
   lokasiId     String
@@ -82,13 +82,13 @@ model TransaksiKasir {
   id              String   @id @default(cuid())
   nomorTransaksi  String   @unique
   tanggal         DateTime @default(now())
-  subtotal        Float
-  pajak           Float    @default(0)
-  diskon          Float    @default(0)
-  total           Float
+  subtotal        Decimal  @db.Decimal(15, 2)
+  pajak           Decimal  @default(0) @db.Decimal(15, 2)
+  diskon          Decimal  @default(0) @db.Decimal(15, 2)
+  total           Decimal  @db.Decimal(15, 2)
   metodePembayaran String  @default("tunai")
-  jumlahBayar     Float
-  kembalian       Float
+  jumlahBayar     Decimal  @db.Decimal(15, 2)
+  kembalian       Decimal  @db.Decimal(15, 2)
   kasirId         String
   catatan         String?
   // Data pelanggan untuk kredit
@@ -113,9 +113,9 @@ model ItemTransaksi {
   transaksiKasirId  String
   barangId          String
   namaBarang        String
-  hargaSatuan       Float
+  hargaSatuan       Decimal  @db.Decimal(15, 2)
   qty               Int
-  subtotal          Float
+  subtotal          Decimal  @db.Decimal(15, 2)
   createdAt         DateTime @default(now())
   
   transaksiKasir TransaksiKasir @relation(fields: [transaksiKasirId], references: [id], onDelete: Cascade)
@@ -133,8 +133,8 @@ model TransaksiMasuk {
   tanggal         DateTime @default(now())
   barangId        String
   qty             Int
-  hargaBeli       Float
-  totalNilai      Float
+  hargaBeli       Decimal  @db.Decimal(15, 2)
+  totalNilai      Decimal  @db.Decimal(15, 2)
   sumber          String
   lokasiId        String
   keterangan      String?
@@ -157,8 +157,8 @@ model TransaksiKeluar {
   tanggal         DateTime @default(now())
   barangId        String
   qty             Int
-  hargaBarang     Float
-  totalNilai      Float
+  hargaBarang     Decimal  @db.Decimal(15, 2)
+  totalNilai      Decimal  @db.Decimal(15, 2)
   tujuan          String
   lokasiId        String
   keterangan      String?
@@ -268,8 +268,8 @@ model JurnalDetail {
   id            String   @id @default(cuid())
   jurnalId      String
   akunId        String
-  debit         Float    @default(0)
-  kredit        Float    @default(0)
+  debit         Decimal  @default(0) @db.Decimal(15, 2)
+  kredit        Decimal  @default(0) @db.Decimal(15, 2)
   deskripsi     String?
   createdAt     DateTime @default(now())
 
@@ -306,7 +306,7 @@ model SaldoAwal {
   id        String   @id @default(cuid())
   akunId    String
   periodeId String
-  saldo     Float    @default(0)
+  saldo     Decimal  @default(0) @db.Decimal(15, 2)
   createdAt DateTime @default(now())
 
   akun      Akun            @relation(fields: [akunId], references: [id])
@@ -360,7 +360,7 @@ model Pengeluaran {
   tanggal           DateTime @default(now())
   kategori          KategoriPengeluaran
   deskripsi         String
-  jumlah            Float
+  jumlah            Decimal  @db.Decimal(15, 2)
   penerima          String
   metodePembayaran  String   @default("tunai")
   catatan           String?
@@ -404,9 +404,9 @@ model Hutang {
   transaksiMasukId  String?  @unique
   sumberHutang      String   // Supplier/Sumber barang
   deskripsi         String   // Deskripsi barang yang dibeli
-  totalHutang       Float
-  totalBayar        Float    @default(0)
-  sisaHutang        Float
+  totalHutang       Decimal  @db.Decimal(15, 2)
+  totalBayar        Decimal  @default(0) @db.Decimal(15, 2)
+  sisaHutang        Decimal  @db.Decimal(15, 2)
   status            StatusHutangPiutang @default(BELUM_LUNAS)
   jatuhTempo        DateTime?
   catatan           String?
@@ -431,9 +431,9 @@ model Piutang {
   nomorHp           String?
   alamat            String?
   deskripsi         String   // Deskripsi barang yang dijual
-  totalPiutang      Float
-  totalBayar        Float    @default(0)
-  sisaPiutang       Float
+  totalPiutang      Decimal  @db.Decimal(15, 2)
+  totalBayar        Decimal  @default(0) @db.Decimal(15, 2)
+  sisaPiutang       Decimal  @db.Decimal(15, 2)
   status            StatusHutangPiutang @default(BELUM_LUNAS)
   jatuhTempo        DateTime?
   catatan           String?
@@ -454,7 +454,7 @@ model PembayaranHutang {
   id              String   @id @default(cuid())
   hutangId        String
   tanggalBayar    DateTime @default(now())
-  jumlahBayar     Float
+  jumlahBayar     Decimal  @db.Decimal(15, 2)
   metodePembayaran String  @default("tunai")
   catatan         String?
   createdAt       DateTime @default(now())
@@ -471,7 +471,7 @@ model PembayaranPiutang {
   id              String   @id @default(cuid())
   piutangId       String
   tanggalBayar    DateTime @default(now())
-  jumlahBayar     Float
+  jumlahBayar     Decimal  @db.Decimal(15, 2)
   metodePembayaran String  @default("tunai")
   catatan         String?
   createdAt       DateTime @default(now())

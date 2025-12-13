@@ -77,11 +77,11 @@ export async function GET(
 
     const unbalancedJournals = allJournals.filter((journal) => {
       const totalDebit = journal.details.reduce(
-        (sum, detail) => sum + detail.debit,
+        (sum, detail) => sum + detail.debit.toNumber(),
         0,
       );
       const totalKredit = journal.details.reduce(
-        (sum, detail) => sum + detail.kredit,
+        (sum, detail) => sum + detail.kredit.toNumber(),
         0,
       );
       return Math.abs(totalDebit - totalKredit) > 0.01; // Allow for small floating point differences
@@ -111,7 +111,8 @@ export async function GET(
         });
 
         const balance = details.reduce(
-          (sum, detail) => sum + detail.kredit - detail.debit,
+          (sum, detail) =>
+            sum + detail.kredit.toNumber() - detail.debit.toNumber(),
           0,
         );
         return { akun, balance };
@@ -129,7 +130,8 @@ export async function GET(
         });
 
         const balance = details.reduce(
-          (sum, detail) => sum + detail.debit - detail.kredit,
+          (sum, detail) =>
+            sum + detail.debit.toNumber() - detail.kredit.toNumber(),
           0,
         );
         return { akun, balance };

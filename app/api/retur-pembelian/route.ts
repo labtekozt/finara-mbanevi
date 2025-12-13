@@ -108,7 +108,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const returnAmount = validatedData.qty * originalTransaksi.hargaBeli;
+    const returnAmount =
+      validatedData.qty * originalTransaksi.hargaBeli.toNumber();
 
     // Determine if original purchase was cash or credit based on source
     const isCashPurchase =

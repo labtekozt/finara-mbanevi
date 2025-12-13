@@ -120,9 +120,9 @@ export async function GET(request: Request) {
       // Calculate opening balance based on account type
       for (const detail of openingDetails) {
         if (akun.tipe === "ASSET" || akun.tipe === "EXPENSE") {
-          saldoAwal += detail.debit - detail.kredit;
+          saldoAwal += detail.debit.toNumber() - detail.kredit.toNumber();
         } else {
-          saldoAwal += detail.kredit - detail.debit;
+          saldoAwal += detail.kredit.toNumber() - detail.debit.toNumber();
         }
       }
     }
@@ -130,8 +130,8 @@ export async function GET(request: Request) {
     // Build general ledger entries with running balance
     let runningBalance = saldoAwal;
     const entries = journalDetails.map((detail) => {
-      const debit = detail.debit;
-      const kredit = detail.kredit;
+      const debit = detail.debit.toNumber();
+      const kredit = detail.kredit.toNumber();
 
       // Calculate running balance based on account type
       if (akun.tipe === "ASSET" || akun.tipe === "EXPENSE") {

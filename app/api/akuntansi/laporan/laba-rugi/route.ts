@@ -60,10 +60,10 @@ export async function GET(request: Request) {
         for (const detail of details) {
           if (akun.tipe === "REVENUE") {
             // Revenue: credit balance (kredit - debit)
-            balance += detail.kredit - detail.debit;
+            balance += detail.kredit.toNumber() - detail.debit.toNumber();
           } else if (akun.tipe === "EXPENSE") {
             // Expense: debit balance (debit - kredit)
-            balance += detail.debit - detail.kredit;
+            balance += detail.debit.toNumber() - detail.kredit.toNumber();
           }
         }
 

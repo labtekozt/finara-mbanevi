@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     });
 
     const totalInventoryValue = inventoryItems.reduce(
-      (total, item) => total + item.hargaBeli * item.stok,
+      (total, item) => total + item.hargaBeli.toNumber() * item.stok,
       0,
     );
 

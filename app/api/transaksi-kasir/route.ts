@@ -9,6 +9,8 @@ import {
   createJournalEntryForCompleteSale,
 } from "@/lib/accounting-utils";
 import { z } from "zod";
+import { serializeDecimal } from "@/lib/utils";
+import logger from "@/lib/logger";
 
 const itemSchema = z.object({
   barangId: z.string(),
@@ -79,9 +81,9 @@ export async function GET(request: NextRequest) {
       take: 100,
     });
 
-    return NextResponse.json(transaksi);
+    return NextResponse.json(serializeDecimal(transaksi));
   } catch (error) {
-    console.error("Error fetching transaksi:", error);
+    logger.error("Error fetching transaksi:", error);
     return NextResponse.json(
       { error: "Failed to fetch transactions" },
       { status: 500 },
@@ -171,7 +173,7 @@ export async function POST(request: NextRequest) {
           itemsForAccounting.push({
             barangId: item.barangId,
             qty: item.qty,
-            costPrice: barang.hargaBeli, // Use purchase price for COGS
+            costPrice: barang.hargaBeli.toNumber(), // Use purchase price for COGS
           });
         }
       }
@@ -247,7 +249,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(completeTransaksi, { status: 201 });
+    return NextResponse.json(serializeDecimal(completeTransaksi), {
+      status: 201,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -264,7 +268,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
-    console.error("Error creating transaksi:", error);
+    logger.error("Error creating transaksi:", error);
     return NextResponse.json(
       { error: "Failed to create transaction" },
       { status: 500 },

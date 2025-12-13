@@ -31,7 +31,10 @@ import { ReactNode } from "react";
 interface HistoryPenjualanTabProps {
   // Data
   sortedTransaksiKasir: TransaksiKasir[];
-  paginatedTransaksiKasir: Array<{ tr: TransaksiKasir; item: ItemTransaksiKasir }>;
+  paginatedTransaksiKasir: Array<{
+    tr: TransaksiKasir;
+    item: ItemTransaksiKasir;
+  }>;
   startDateKasir: string;
   endDateKasir: string;
 

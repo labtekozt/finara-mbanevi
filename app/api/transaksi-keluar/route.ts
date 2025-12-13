@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { generateKeluarNumber } from "@/lib/transaction-number";
 import { createJournalEntryForOutgoingTransaction } from "@/lib/accounting-utils";
 import { z } from "zod";
+import logger from "@/lib/logger";
 
 const transaksiKeluarSchema = z.object({
   barangId: z.string().min(1, "Barang harus dipilih"),
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(transaksi);
   } catch (error) {
-    console.error("Error fetching transaksi keluar:", error);
+    logger.error("Error fetching transaksi keluar:", error);
     return NextResponse.json(
       { error: "Failed to fetch transactions" },
       { status: 500 },
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const totalNilai = validatedData.qty * barang.hargaBeli;
+    const totalNilai = validatedData.qty * barang.hargaBeli.toNumber();
 
     // Create transaction and update stock
     const transaksi = await prisma.$transaction(async (tx: any) => {
@@ -146,11 +147,11 @@ export async function POST(request: NextRequest) {
       );
 
       if (journalEntry) {
-        console.log(
+        logger.info(
           `Journal entry created for outgoing transaction: ${journalEntry.nomorJurnal}`,
         );
       } else {
-        console.log(
+        logger.info(
           `No journal entry needed for warehouse transfer: ${newTransaksi.nomorTransaksi}`,
         );
       }
@@ -185,7 +186,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
-    console.error("Error creating transaksi keluar:", error);
+    logger.error("Error creating transaksi keluar:", error);
     return NextResponse.json(
       { error: "Failed to create transaction" },
       { status: 500 },

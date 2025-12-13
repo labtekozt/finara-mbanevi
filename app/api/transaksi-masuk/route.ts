@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { generateMasukNumber } from "@/lib/transaction-number";
 import { createJournalEntryForStockAddition } from "@/lib/accounting-utils";
 import { z } from "zod";
+import logger from "@/lib/logger";
 
 const transaksiMasukSchema = z.object({
   barangId: z.string().min(1, "Barang harus dipilih"),
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(transaksi);
   } catch (error) {
-    console.error("Error fetching transaksi masuk:", error);
+    logger.error("Error fetching transaksi masuk:", error);
     return NextResponse.json(
       { error: "Failed to fetch transactions" },
       { status: 500 },
@@ -161,7 +162,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    console.error("Error creating transaksi masuk:", error);
+    logger.error("Error creating transaksi masuk:", error);
     return NextResponse.json(
       { error: "Failed to create transaction" },
       { status: 500 },

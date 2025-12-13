@@ -87,7 +87,7 @@ export async function PUT(
       });
 
       // If amount changed, reverse old journal entry and create new one
-      if (currentExpense.jumlah !== parseFloat(jumlah)) {
+      if (currentExpense.jumlah.toNumber() !== parseFloat(jumlah)) {
         // Find and reverse the old journal entry
         const oldJournalEntry = await tx.jurnalEntry.findFirst({
           where: {
@@ -124,7 +124,7 @@ export async function PUT(
           action: "UPDATE",
           entity: "PENGELUARAN",
           entityId: updatedExpense.id,
-          description: `Updated expense: ${updatedExpense.deskripsi} - Rp ${updatedExpense.jumlah.toLocaleString("id-ID")}`,
+          description: `Updated expense: ${updatedExpense.deskripsi} - Rp ${updatedExpense.jumlah.toNumber().toLocaleString("id-ID")}`,
         },
       });
 
@@ -193,7 +193,7 @@ export async function DELETE(
           action: "DELETE",
           entity: "PENGELUARAN",
           entityId: id,
-          description: `Deleted expense: ${expense.deskripsi} - Rp ${expense.jumlah.toLocaleString("id-ID")}`,
+          description: `Deleted expense: ${expense.deskripsi} - Rp ${expense.jumlah.toNumber().toLocaleString("id-ID")}`,
         },
       });
 

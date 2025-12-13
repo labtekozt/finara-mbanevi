@@ -56,8 +56,8 @@ export async function GET(request: Request) {
 
     for (const entry of currentPeriodEntries) {
       for (const detail of entry.details) {
-        totalDebit += detail.debit;
-        totalCredit += detail.kredit;
+        totalDebit += detail.debit.toNumber();
+        totalCredit += detail.kredit.toNumber();
       }
     }
 

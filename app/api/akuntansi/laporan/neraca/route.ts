@@ -54,7 +54,7 @@ export async function GET(request: Request) {
               },
             },
           });
-          saldoAwal = openingBalance?.saldo || 0;
+          saldoAwal = openingBalance?.saldo.toNumber() || 0;
         }
 
         // Calculate mutations up to period end (or current date if no period)
@@ -84,13 +84,13 @@ export async function GET(request: Request) {
         for (const detail of details) {
           if (akun.tipe === "ASSET") {
             // Assets: normal debit balance, debit increases, credit decreases
-            mutations += detail.debit - detail.kredit;
+            mutations += detail.debit.toNumber() - detail.kredit.toNumber();
           } else if (akun.tipe === "LIABILITY") {
             // Liabilities: normal credit balance, credit increases, debit decreases
-            mutations += detail.kredit - detail.debit;
+            mutations += detail.kredit.toNumber() - detail.debit.toNumber();
           } else if (akun.tipe === "EQUITY") {
             // Equity: normal credit balance, credit increases, debit decreases
-            mutations += detail.kredit - detail.debit;
+            mutations += detail.kredit.toNumber() - detail.debit.toNumber();
           }
         }
 
@@ -169,7 +169,8 @@ export async function GET(request: Request) {
             },
           });
           return details.reduce(
-            (sum, detail) => sum + detail.kredit - detail.debit,
+            (sum, detail) =>
+              sum + detail.kredit.toNumber() - detail.debit.toNumber(),
             0,
           );
         }),
@@ -194,7 +195,8 @@ export async function GET(request: Request) {
             },
           });
           return details.reduce(
-            (sum, detail) => sum + detail.debit - detail.kredit,
+            (sum, detail) =>
+              sum + detail.debit.toNumber() - detail.kredit.toNumber(),
             0,
           );
         }),
@@ -235,7 +237,8 @@ export async function GET(request: Request) {
             },
           });
           return details.reduce(
-            (sum, detail) => sum + detail.kredit - detail.debit,
+            (sum, detail) =>
+              sum + detail.kredit.toNumber() - detail.debit.toNumber(),
             0,
           );
         }),
@@ -257,7 +260,8 @@ export async function GET(request: Request) {
             },
           });
           return details.reduce(
-            (sum, detail) => sum + detail.debit - detail.kredit,
+            (sum, detail) =>
+              sum + detail.debit.toNumber() - detail.kredit.toNumber(),
             0,
           );
         }),

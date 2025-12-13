@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { createJournalEntryForStockAddition } from "@/lib/accounting-utils";
 import { z } from "zod";
+import { serializeDecimal } from "@/lib/utils";
 
 const barangSchema = z.object({
   nama: z.string().min(1, "Nama barang harus diisi"),
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(barang);
+    return NextResponse.json(serializeDecimal(barang));
   } catch (error) {
     console.error("Error fetching barang:", error);
     return NextResponse.json(
