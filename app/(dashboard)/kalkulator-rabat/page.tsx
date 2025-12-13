@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Calculator, TrendingUp, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface Barang {
   id: string;
@@ -63,7 +64,7 @@ export default function KalkulatorRabatPage() {
           setBarangList(data);
         }
       } catch (error) {
-        console.error("Error fetching barang:", error);
+        toast.error("Gagal memuat data barang");
       } finally {
         setLoading(false);
       }

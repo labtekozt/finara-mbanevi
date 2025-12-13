@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import logger from "@/lib/logger";
 
 // GET - List all piutang
 export async function GET(request: NextRequest) {
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(piutang);
   } catch (error) {
-    console.error("Error fetching piutang:", error);
+    logger.error("Error fetching piutang:", error);
     return NextResponse.json(
       { error: "Failed to fetch piutang" },
       { status: 500 },

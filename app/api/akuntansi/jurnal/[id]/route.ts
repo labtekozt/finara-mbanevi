@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
 import { AuditLogger } from "@/lib/audit-logger";
+import logger from "@/lib/logger";
 
 interface RouteParams {
   params: Promise<{
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(entry);
   } catch (error) {
-    console.error("Error fetching journal entry:", error);
+    logger.error("Error fetching journal entry:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -152,7 +153,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ message: "Journal entry deleted successfully" });
   } catch (error) {
-    console.error("Error deleting journal entry:", error);
+    logger.error("Error deleting journal entry:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

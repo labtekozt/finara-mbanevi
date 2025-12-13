@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
+import logger from "@/lib/logger";
 
 // GET /api/akuntansi/akun/[id] - Get account by ID
 export async function GET(
@@ -43,7 +44,7 @@ export async function GET(
 
     return NextResponse.json(akun);
   } catch (error) {
-    console.error("Error fetching account:", error);
+    logger.error("Error fetching account:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -139,7 +140,7 @@ export async function PUT(
 
     return NextResponse.json(akun);
   } catch (error) {
-    console.error("Error updating account:", error);
+    logger.error("Error updating account:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -207,7 +208,7 @@ export async function DELETE(
 
     return NextResponse.json(akun);
   } catch (error) {
-    console.error("Error deleting account:", error);
+    logger.error("Error deleting account:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

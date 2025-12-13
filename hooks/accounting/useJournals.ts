@@ -59,7 +59,7 @@ export function useJournals(options: UseJournalsOptions = {}) {
         );
         setAccumulationData(data);
       } catch (err) {
-        console.error("Failed to generate accumulation data:", err);
+        toast.error("Gagal memuat data akumulasi");
       } finally {
         setAccumulationLoading(false);
       }

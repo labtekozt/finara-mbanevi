@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { createJournalEntryForReceivablePayment } from "@/lib/accounting-utils";
+import logger from "@/lib/logger";
 
 // POST - Terima bayar piutang
 export async function POST(
@@ -79,7 +80,7 @@ export async function POST(
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error processing piutang payment:", error);
+    logger.error("Error processing piutang payment:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Failed to process payment";
     const status =

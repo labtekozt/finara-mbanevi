@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
+import logger from "@/lib/logger";
 
 interface RouteParams {
   params: Promise<{
@@ -62,7 +63,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     return NextResponse.json(openingBalance);
   } catch (error) {
-    console.error("Error fetching opening balance:", error);
+    logger.error("Error fetching opening balance:", error);
     return NextResponse.json(
       { error: "Failed to fetch opening balance" },
       { status: 500 },
@@ -142,7 +143,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
     return NextResponse.json(openingBalance);
   } catch (error) {
-    console.error("Error updating opening balance:", error);
+    logger.error("Error updating opening balance:", error);
     return NextResponse.json(
       { error: "Failed to update opening balance" },
       { status: 500 },
@@ -186,7 +187,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting opening balance:", error);
+    logger.error("Error deleting opening balance:", error);
     return NextResponse.json(
       { error: "Failed to delete opening balance" },
       { status: 500 },

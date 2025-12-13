@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { generateTransactionNumber } from "@/lib/transaction-number";
 import { createJournalEntryForSalesReturn } from "@/lib/accounting-utils";
 import { z } from "zod";
+import logger from "@/lib/logger";
 
 const returPenjualanSchema = z.object({
   transaksiKasirId: z.string().min(1, "Transaksi penjualan harus dipilih"),
@@ -109,7 +110,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(transformedRetur);
   } catch (error) {
-    console.error("Error fetching retur penjualan:", error);
+    logger.error("Error fetching retur penjualan:", error);
     return NextResponse.json(
       { error: "Failed to fetch sales returns" },
       { status: 500 },
@@ -302,7 +303,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    console.error("Error creating retur penjualan:", error);
+    logger.error("Error creating retur penjualan:", error);
     return NextResponse.json(
       { error: "Failed to create sales return" },
       { status: 500 },

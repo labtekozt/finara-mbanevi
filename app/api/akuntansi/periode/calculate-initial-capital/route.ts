@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
 import { generateTransactionNumber } from "@/lib/transaction-number";
+import logger from "@/lib/logger";
 
 export async function POST(request: Request) {
   try {
@@ -165,7 +166,7 @@ export async function POST(request: Request) {
       journalEntry,
     });
   } catch (error) {
-    console.error("Error calculating initial capital:", error);
+    logger.error("Error calculating initial capital:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

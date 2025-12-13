@@ -129,7 +129,6 @@ export function JournalRecapitulation({
       setDetailedEntries(periodEntries);
       setIsDetailDialogOpen(true);
     } catch (error) {
-      console.error("Error loading period details:", error);
       toast.error("Gagal memuat detail periode");
     } finally {
       setLoadingDetails(false);
@@ -156,7 +155,6 @@ export function JournalRecapitulation({
       }
       toast.success("PDF berhasil diekspor");
     } catch (error) {
-      console.error("Error exporting PDF:", error);
       toast.error("Gagal export PDF");
     }
   };
@@ -570,7 +568,6 @@ export function JournalRecapitulation({
       );
       toast.success("Detail PDF berhasil diekspor");
     } catch (error) {
-      console.error("Error exporting period detail PDF:", error);
       toast.error("Gagal export detail PDF");
     }
   };

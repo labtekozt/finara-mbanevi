@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
 import { PeriodClosingData } from "@/types/accounting";
+import logger from "@/lib/logger";
 
 export async function GET(
   request: Request,
@@ -121,7 +122,7 @@ export async function GET(
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error fetching period closing status:", error);
+    logger.error("Error fetching period closing status:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

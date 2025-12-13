@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
 import { IncomeStatementData } from "@/types/accounting";
+import logger from "@/lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -105,7 +106,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error fetching income statement:", error);
+    logger.error("Error fetching income statement:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

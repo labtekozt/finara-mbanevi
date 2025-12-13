@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createJournalEntryForStockAdjustment } from "@/lib/accounting-utils";
 import { z } from "zod";
 import { serializeDecimal } from "@/lib/utils";
+import logger from "@/lib/logger";
 
 const barangSchema = z.object({
   nama: z.string().min(1, "Nama barang harus diisi"),
@@ -44,7 +45,7 @@ export async function GET(
 
     return NextResponse.json(serializeDecimal(barang));
   } catch (error) {
-    console.error("Error fetching item:", error);
+    logger.error("Error fetching item:", error);
     return NextResponse.json(
       { error: "Failed to fetch item" },
       { status: 500 },
@@ -99,11 +100,11 @@ export async function PUT(
           session.user.id,
         );
 
-        console.log(
+        logger.info(
           `Stock adjustment journal created for ${barang.nama}: ${stockDifference > 0 ? "+" : ""}${stockDifference} units`,
         );
       } catch (journalError) {
-        console.error(
+        logger.error(
           "Failed to create stock adjustment journal:",
           journalError,
         );
@@ -131,7 +132,7 @@ export async function PUT(
         { status: 400 },
       );
     }
-    console.error("Error updating barang:", error);
+    logger.error("Error updating barang:", error);
     return NextResponse.json(
       { error: "Failed to update item" },
       { status: 500 },
@@ -177,7 +178,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting barang:", error);
+    logger.error("Error deleting barang:", error);
     return NextResponse.json(
       { error: "Failed to delete item" },
       { status: 500 },

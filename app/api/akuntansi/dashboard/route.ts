@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
+import logger from "@/lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -70,7 +71,7 @@ export async function GET(request: Request) {
       isBalanced,
     });
   } catch (error) {
-    console.error("Error fetching accounting dashboard data:", error);
+    logger.error("Error fetching accounting dashboard data:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

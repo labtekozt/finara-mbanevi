@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { generateTransactionNumber } from "@/lib/transaction-number";
 import { createJournalEntryForPurchaseReturn } from "@/lib/accounting-utils";
 import { z } from "zod";
+import logger from "@/lib/logger";
 
 const returPembelianSchema = z.object({
   transaksiMasukId: z.string().min(1, "Transaksi pembelian harus dipilih"),
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(retur);
   } catch (error) {
-    console.error("Error fetching retur pembelian:", error);
+    logger.error("Error fetching retur pembelian:", error);
     return NextResponse.json(
       { error: "Failed to fetch purchase returns" },
       { status: 500 },
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
       originalTransaksi.sumber.toLowerCase().includes("cash") ||
       originalTransaksi.sumber.toLowerCase().includes("bayar");
 
-    console.log("Retur Pembelian Debug:", {
+    logger.info("Retur Pembelian Debug:", {
       sumber: originalTransaksi.sumber,
       isCashPurchase,
       returnAmount,
@@ -187,7 +188,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    console.error("Error creating retur pembelian:", error);
+    logger.error("Error creating retur pembelian:", error);
     return NextResponse.json(
       { error: "Failed to create purchase return" },
       { status: 500 },

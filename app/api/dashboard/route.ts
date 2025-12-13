@@ -13,6 +13,7 @@ import {
   endOfYear,
   subDays,
 } from "date-fns";
+import logger from "@/lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -239,7 +240,7 @@ export async function GET(request: Request) {
       dailyRevenueData,
     });
   } catch (error) {
-    console.error("Dashboard API error:", error);
+    logger.error("Dashboard API error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

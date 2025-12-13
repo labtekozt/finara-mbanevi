@@ -6,6 +6,7 @@ import { hasPermission } from "@/lib/permissions";
 import { TrialBalanceData } from "@/types/accounting";
 import { FinancialValidator } from "@/lib/financial-validator";
 import { AuditLogger } from "@/lib/audit-logger";
+import logger from "@/lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -174,7 +175,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error fetching trial balance:", error);
+    logger.error("Error fetching trial balance:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

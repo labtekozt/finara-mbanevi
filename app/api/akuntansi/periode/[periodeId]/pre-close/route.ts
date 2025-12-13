@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
+import logger from "@/lib/logger";
 
 interface PreCloseValidation {
   isValid: boolean;
@@ -202,7 +203,7 @@ export async function GET(
 
     return NextResponse.json(validation);
   } catch (error) {
-    console.error("Error validating period pre-close:", error);
+    logger.error("Error validating period pre-close:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

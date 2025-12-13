@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { generateTransactionNumber } from "./transaction-number";
 import { Prisma } from "@prisma/client";
+import logger from "@/lib/logger";
 
 // Account codes (these should match your chart of accounts)
 export const ACCOUNT_CODES = {
@@ -800,7 +801,7 @@ export async function createJournalEntryForPurchaseReturn(
 
   const nomorJurnal = generateTransactionNumber("JR");
 
-  console.log("Creating Purchase Return Journal (Revenue Correction):", {
+  logger.log("Creating Purchase Return Journal (Revenue Correction):", {
     returnId,
     totalAmount,
     isCashPurchase,

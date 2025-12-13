@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import logger from "@/lib/logger";
 
 // GET - List all locations
 export async function GET(request: NextRequest) {
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(lokasi);
   } catch (error) {
-    console.error("Error fetching lokasi:", error);
+    logger.error("Error fetching lokasi:", error);
     return NextResponse.json(
       { error: "Failed to fetch locations" },
       { status: 500 },
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(lokasi, { status: 201 });
   } catch (error) {
-    console.error("Error creating lokasi:", error);
+    logger.error("Error creating lokasi:", error);
     return NextResponse.json(
       { error: "Failed to create location" },
       { status: 500 },

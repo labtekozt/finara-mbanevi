@@ -7,6 +7,7 @@ import {
   createJournalEntryForExpense,
   reverseJournalEntry,
 } from "@/lib/accounting-utils";
+import logger from "@/lib/logger";
 
 // PUT /api/pengeluaran/[id] - Update expense
 export async function PUT(
@@ -108,7 +109,7 @@ export async function PUT(
             session.user.id,
           );
         } catch (journalError) {
-          console.error(
+          logger.error(
             "Error creating journal entry for updated expense:",
             journalError,
           );
@@ -133,7 +134,7 @@ export async function PUT(
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error updating expense:", error);
+    logger.error("Error updating expense:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -202,7 +203,7 @@ export async function DELETE(
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error deleting expense:", error);
+    logger.error("Error deleting expense:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

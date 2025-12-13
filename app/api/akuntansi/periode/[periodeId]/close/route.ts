@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
 import { generateTransactionNumber } from "@/lib/transaction-number";
 import { PeriodClosingData } from "@/types/accounting";
+import logger from "@/lib/logger";
 
 export async function POST(
   request: Request,
@@ -333,7 +334,7 @@ export async function POST(
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    console.error("Error closing period:", error);
+    logger.error("Error closing period:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

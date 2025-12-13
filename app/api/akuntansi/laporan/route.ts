@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
+import logger from "@/lib/logger";
 
 // GET /api/akuntansi/laporan - Generate financial reports
 export async function GET(request: Request) {
@@ -77,7 +78,7 @@ export async function GET(request: Request) {
       data: reportData,
     });
   } catch (error) {
-    console.error("Error generating financial report:", error);
+    logger.error("Error generating financial report:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

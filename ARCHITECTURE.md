@@ -424,7 +424,7 @@ try {
   }
 
   // Other errors
-  console.error(error);
+  logger.error(error);
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 }
 ```

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createJournalEntryForStockAddition } from "@/lib/accounting-utils";
 import { z } from "zod";
 import { serializeDecimal } from "@/lib/utils";
+import logger from "@/lib/logger";
 
 const barangSchema = z.object({
   nama: z.string().min(1, "Nama barang harus diisi"),
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(serializeDecimal(barang));
   } catch (error) {
-    console.error("Error fetching barang:", error);
+    logger.error("Error fetching barang:", error);
     return NextResponse.json(
       { error: "Failed to fetch items" },
       { status: 500 },
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    console.error("Error creating barang:", error);
+    logger.error("Error creating barang:", error);
     return NextResponse.json(
       { error: "Failed to create item" },
       { status: 500 },

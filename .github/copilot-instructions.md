@@ -15,12 +15,16 @@
   - **Pattern:** Always use `select: { id: true, nama: true, username: true }` in Prisma queries.
   - **Anti-Pattern:** `include: { user: true }` (leaks password hash).
 - **Authorization:** Verify session and permissions in every API route using `getServerSession` and `hasPermission`.
+- **Logging:** Use `logger` from `@/lib/logger` instead of `console.log` or `console.error`.
+  - **Pattern:** `logger.info("Transaction created", { id: tx.id })` or `logger.error("Failed to process", error)`.
 
 ## 💾 Database & Transactions
 
+- **Numeric Type:** All monetary and quantity fields use `Decimal` in Prisma (`@db.Decimal(15, 2)`).
+  - **Arithmetic:** Convert to number for calculations: `item.harga.toNumber() * item.qty`.
+  - **Serialization:** Use `serializeDecimal(data)` from `@/lib/utils` before returning JSON responses (Next.js cannot serialize Decimal).
 - **Atomic Operations:** Use `prisma.$transaction` for any operation affecting multiple tables (e.g., Sales + Inventory + Accounting).
-- **Optimization:** Prefer `select` over `include` to reduce payload size. Avoid unnecessary nested includes if data is denormalized (e.g., `namaBarang` in `ItemTransaksi`).
-- **Schema Changes:** Run `npx prisma db push` to apply schema changes during development.
+- **Optimization:** Prefer `select` over `include` to reduce payload size.
 
 ## 💰 Accounting & Financials
 
@@ -32,17 +36,19 @@
 
 - **Components:** Use `components/ui` (shadcn) for base components.
 - **Client Components:** Mark interactive components with `"use client"`.
-- **Data Fetching:** Use `useEffect` or SWR for client-side fetching; prefer Server Components for initial data where possible.
+- **Data Fetching:** Use `useEffect` or SWR for client-side fetching.
 - **Forms:** Use `react-hook-form` with `zod` validation.
 
 ## 🧪 Testing & Quality
 
 - **Unit Tests:** Run `npm test` for logic verification (Jest).
+- **Type Checking:** Run `npm run check-types` to verify TypeScript types (especially Decimal vs number).
 - **Linting:** Run `npm run lint` to check for issues.
-- **Type Safety:** Ensure all interfaces in `types/` match the Prisma schema and API responses.
+- **Formatting:** Run `npm run format` (Prettier) before committing.
 
 ## 🚀 Common Commands
 
 - `npm run dev`: Start development server
-- `npx prisma generate`: Regenerate Prisma client
-- `npx prisma studio`: Open database GUI
+- `npm run build`: Full build (Format -> Check Types -> Next Build)
+- `npx prisma generate`: Regenerate Prisma client (run after schema changes)
+- `npx prisma db push`: Apply schema changes to database

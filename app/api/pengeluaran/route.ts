@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
 import { createJournalEntryForExpense } from "@/lib/accounting-utils";
+import logger from "@/lib/logger";
 
 // GET /api/pengeluaran - Get all expenses
 export async function GET(request: Request) {
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(pengeluaran);
   } catch (error) {
-    console.error("Error fetching expenses:", error);
+    logger.error("Error fetching expenses:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -141,7 +142,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    console.error("Error creating expense:", error);
+    logger.error("Error creating expense:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

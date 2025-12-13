@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
 import { GeneralLedgerData } from "@/types/accounting";
+import logger from "@/lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -175,7 +176,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error fetching general ledger:", error);
+    logger.error("Error fetching general ledger:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },

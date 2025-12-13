@@ -433,7 +433,9 @@ export default function KasirPage() {
               <CardContent className="flex-1 overflow-y-auto">
                 {paginatedBarang.length === 0 && (
                   <div className="text-center text-muted-foreground py-8 flex items-center justify-center gap-2">
-                    <span>Tidak ada barang "{search}" yang ditemukan</span>
+                    <span>
+                      Tidak ada barang &quot;{search}&quot; yang ditemukan
+                    </span>
                   </div>
                 )}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">

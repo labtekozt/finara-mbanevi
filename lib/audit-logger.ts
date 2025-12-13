@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 import { Prisma } from "@prisma/client";
+import logger from "@/lib/logger";
 
 export interface AuditLogEntry {
   tableName: string;
@@ -33,7 +34,7 @@ export class AuditLogger {
         },
       });
     } catch (error) {
-      console.error("Failed to log financial change:", error);
+      logger.error("Failed to log financial change:", error);
       // Don't throw - audit logging should not break business logic
     }
   }
@@ -221,7 +222,7 @@ export class AuditLogger {
         },
       });
     } catch (error) {
-      console.error("Failed to log to activity log:", error);
+      logger.error("Failed to log to activity log:", error);
       // Don't throw - activity logging should not break business logic
     }
   }

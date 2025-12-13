@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
+import logger from "@/lib/logger";
 
 // GET /api/akuntansi/periode - Get accounting periods
 export async function GET(request: Request) {
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(periode);
   } catch (error) {
-    console.error("Error fetching accounting periods:", error);
+    logger.error("Error fetching accounting periods:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
@@ -142,7 +143,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(periode, { status: 201 });
   } catch (error) {
-    console.error("Error creating accounting period:", error);
+    logger.error("Error creating accounting period:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 },
