@@ -4,8 +4,6 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { generateKasirNumber } from "@/lib/transaction-number";
 import {
-  createJournalEntryForSale,
-  createJournalEntryForCOGS,
   createJournalEntryForCompleteSale,
   getActiveAccountingPeriod,
 } from "@/lib/accounting-utils";

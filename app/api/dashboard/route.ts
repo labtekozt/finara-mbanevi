@@ -228,7 +228,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       stats: {
-        totalPenjualan: penjualan._sum.total || 0,
+        totalPenjualan: penjualan._sum.total?.toNumber() || 0,
         totalTransaksi: penjualan._count,
         barangStokRendah,
         totalBarangMasuk: barangMasuk,

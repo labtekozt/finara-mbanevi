@@ -1,4 +1,73 @@
 import "@testing-library/jest-dom";
+import { TextEncoder, TextDecoder } from "util";
+
+Object.assign(global, { TextDecoder, TextEncoder });
+
+// Polyfill Request/Response for Next.js API routes
+if (typeof global.Request === "undefined") {
+  // @ts-ignore
+  global.Request = class Request {
+    constructor(input: any, init: any) {
+      this.url = input;
+      this.method = init?.method || "GET";
+      this.headers = new Headers(init?.headers);
+      this.body = init?.body;
+    }
+    url: string;
+    method: string;
+    headers: Headers;
+    body: any;
+    async json() {
+      return JSON.parse(this.body);
+    }
+  };
+}
+
+if (typeof global.Response === "undefined") {
+  // @ts-ignore
+  global.Response = class Response {
+    constructor(body: any, init: any) {
+      this.body = body;
+      this.status = init?.status || 200;
+      this.headers = new Headers(init?.headers);
+    }
+    body: any;
+    status: number;
+    headers: Headers;
+    async json() {
+      return typeof this.body === "string" ? JSON.parse(this.body) : this.body;
+    }
+    static json(data: any, init?: any) {
+      return new Response(JSON.stringify(data), {
+        ...init,
+        headers: {
+          ...init?.headers,
+          "content-type": "application/json",
+        },
+      });
+    }
+  };
+}
+
+if (typeof global.Headers === "undefined") {
+  // @ts-ignore
+  global.Headers = class Headers {
+    private map = new Map<string, string>();
+    constructor(init?: any) {
+      if (init) {
+        Object.entries(init).forEach(([key, value]) => {
+          this.map.set(key, value as string);
+        });
+      }
+    }
+    get(key: string) {
+      return this.map.get(key) || null;
+    }
+    set(key: string, value: string) {
+      this.map.set(key, value);
+    }
+  };
+}
 
 // Polyfill setImmediate for Prisma/Jest compatibility
 if (typeof setImmediate === "undefined") {
