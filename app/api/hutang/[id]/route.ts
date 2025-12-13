@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 // GET - Get hutang by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -14,9 +14,11 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
+
     const hutang = await prisma.hutang.findUnique({
       where: {
-        id: params.id,
+        id,
       },
       include: {
         pembayaranHutang: {
@@ -30,7 +32,7 @@ export async function GET(
     if (!hutang) {
       return NextResponse.json(
         { error: "Hutang tidak ditemukan" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -39,7 +41,7 @@ export async function GET(
     console.error("Error fetching hutang detail:", error);
     return NextResponse.json(
       { error: "Failed to fetch hutang detail" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

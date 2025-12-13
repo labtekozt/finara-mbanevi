@@ -28,7 +28,11 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { StyledTabs, StyledTabsList, StyledTabsTrigger } from "@/components/ui/styled-tabs";
+import {
+  StyledTabs,
+  StyledTabsList,
+  StyledTabsTrigger,
+} from "@/components/ui/styled-tabs";
 import {
   Plus,
   Minus,
@@ -814,7 +818,11 @@ export default function KasirPage() {
                 <Button
                   className="w-full mt-4"
                   onClick={openConfirmPayment}
-                  disabled={loading || cart.length === 0 || (metodePembayaran === "tunai" && kembalian < 0)}
+                  disabled={
+                    loading ||
+                    cart.length === 0 ||
+                    (metodePembayaran === "tunai" && kembalian < 0)
+                  }
                 >
                   <ShoppingCart className="mr-2 h-4 w-4" />
                   Bayar

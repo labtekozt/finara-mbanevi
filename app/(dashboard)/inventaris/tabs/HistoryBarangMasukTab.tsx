@@ -98,9 +98,7 @@ export function HistoryBarangMasukTab({
             <div className="text-2xl font-bold">
               {totalQty.toLocaleString("id-ID")}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Unit barang masuk
-            </p>
+            <p className="text-xs text-muted-foreground">Unit barang masuk</p>
           </CardContent>
         </Card>
         <Card>
@@ -111,9 +109,7 @@ export function HistoryBarangMasukTab({
             <div className="text-2xl font-bold">
               Rp {totalNilai.toLocaleString("id-ID")}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Nilai pembelian
-            </p>
+            <p className="text-xs text-muted-foreground">Nilai pembelian</p>
           </CardContent>
         </Card>
       </div>

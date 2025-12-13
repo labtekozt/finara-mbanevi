@@ -36,7 +36,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TabsContent } from "@/components/ui/tabs";
-import { StyledTabs, StyledTabsList, StyledTabsTrigger } from "@/components/ui/styled-tabs";
+import {
+  StyledTabs,
+  StyledTabsList,
+  StyledTabsTrigger,
+} from "@/components/ui/styled-tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus,

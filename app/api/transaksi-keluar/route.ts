@@ -93,6 +93,31 @@ export async function POST(request: NextRequest) {
 
     // Create transaction and update stock
     const transaksi = await prisma.$transaction(async (tx: any) => {
+      // 1. Atomic Stock Check & Update
+      const updateResult = await tx.barang.updateMany({
+        where: {
+          id: validatedData.barangId,
+          stok: { gte: validatedData.qty }, // Atomic check
+        },
+        data: {
+          stok: { decrement: validatedData.qty },
+        },
+      });
+
+      if (updateResult.count === 0) {
+        // Re-fetch to give accurate error message
+        const currentBarang = await tx.barang.findUnique({
+          where: { id: validatedData.barangId },
+        });
+        if (!currentBarang) {
+          throw new Error("Barang tidak ditemukan");
+        } else {
+          throw new Error(
+            `Stok ${currentBarang.nama} tidak cukup. Tersedia: ${currentBarang.stok} ${currentBarang.satuan}`,
+          );
+        }
+      }
+
       const newTransaksi = await tx.transaksiKeluar.create({
         data: {
           nomorTransaksi: generateKeluarNumber(),
@@ -110,39 +135,24 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Update stock
-      await tx.barang.update({
-        where: { id: validatedData.barangId },
-        data: {
-          stok: {
-            decrement: validatedData.qty,
-          },
-        },
-      });
-
       // Create journal entry for outgoing transaction based on purpose
-      try {
-        const journalEntry = await createJournalEntryForOutgoingTransaction(
-          newTransaksi.id,
-          totalNilai,
-          validatedData.tujuan,
-          session.user.id,
+      // Removed try-catch to ensure atomicity
+      const journalEntry = await createJournalEntryForOutgoingTransaction(
+        newTransaksi.id,
+        totalNilai,
+        validatedData.tujuan,
+        session.user.id,
+        tx, // Pass transaction client
+      );
+
+      if (journalEntry) {
+        console.log(
+          `Journal entry created for outgoing transaction: ${journalEntry.nomorJurnal}`,
         );
-        if (journalEntry) {
-          console.log(
-            `Journal entry created for outgoing transaction: ${journalEntry.nomorJurnal}`,
-          );
-        } else {
-          console.log(
-            `No journal entry needed for warehouse transfer: ${newTransaksi.nomorTransaksi}`,
-          );
-        }
-      } catch (journalError) {
-        console.error(
-          "Failed to create journal entry for outgoing transaction:",
-          journalError,
+      } else {
+        console.log(
+          `No journal entry needed for warehouse transfer: ${newTransaksi.nomorTransaksi}`,
         );
-        // Don't fail the transaction if journal creation fails
       }
 
       // Log activity
@@ -168,6 +178,13 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to create transaction";
+    if (errorMessage.includes("Stok") || errorMessage.includes("tidak cukup")) {
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
+    }
+
     console.error("Error creating transaksi keluar:", error);
     return NextResponse.json(
       { error: "Failed to create transaction" },

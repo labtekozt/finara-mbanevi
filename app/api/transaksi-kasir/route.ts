@@ -65,7 +65,11 @@ export async function GET(request: NextRequest) {
         },
         itemTransaksi: {
           include: {
-            barang: true,
+            barang: {
+              select: {
+                satuan: true,
+              },
+            },
           },
         },
       },
@@ -96,32 +100,37 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = transaksiSchema.parse(body);
 
-    // Check stock availability for all items
-    for (const item of validatedData.items) {
-      const barang = await prisma.barang.findUnique({
-        where: { id: item.barangId },
-      });
-
-      if (!barang) {
-        return NextResponse.json(
-          { error: `Barang ${item.namaBarang} tidak ditemukan` },
-          { status: 400 },
-        );
-      }
-
-      if (barang.stok < item.qty) {
-        return NextResponse.json(
-          {
-            error: `Stok ${item.namaBarang} tidak cukup. Tersedia: ${barang.stok} ${barang.satuan}`,
-          },
-          { status: 400 },
-        );
-      }
-    }
-
     // Create transaction with items and update stock
-    const transaksi = await prisma.$transaction(async (tx) => {
-      // Create transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Atomic Stock Check & Update
+      // We do this first to ensure we have the stock locked/updated before proceeding
+      for (const item of validatedData.items) {
+        const updateResult = await tx.barang.updateMany({
+          where: {
+            id: item.barangId,
+            stok: { gte: item.qty }, // Atomic check: only update if stock >= qty
+          },
+          data: {
+            stok: { decrement: item.qty },
+          },
+        });
+
+        if (updateResult.count === 0) {
+          // If count is 0, it means either item doesn't exist or stock is insufficient
+          const barang = await tx.barang.findUnique({
+            where: { id: item.barangId },
+          });
+          if (!barang) {
+            throw new Error(`Barang ${item.namaBarang} tidak ditemukan`);
+          } else {
+            throw new Error(
+              `Stok ${item.namaBarang} tidak cukup. Tersedia: ${barang.stok} ${barang.satuan}`,
+            );
+          }
+        }
+      }
+
+      // 2. Create transaction header
       const newTransaksi = await tx.transaksiKasir.create({
         data: {
           nomorTransaksi: generateKasirNumber(),
@@ -140,7 +149,8 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Create transaction items and update stock
+      // 3. Create transaction items
+      const itemsForAccounting = [];
       for (const item of validatedData.items) {
         await tx.itemTransaksi.create({
           data: {
@@ -153,18 +163,20 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // Update stock
-        await tx.barang.update({
+        // Fetch cost price for accounting (COGS)
+        const barang = await tx.barang.findUnique({
           where: { id: item.barangId },
-          data: {
-            stok: {
-              decrement: item.qty,
-            },
-          },
         });
+        if (barang) {
+          itemsForAccounting.push({
+            barangId: item.barangId,
+            qty: item.qty,
+            costPrice: barang.hargaBeli, // Use purchase price for COGS
+          });
+        }
       }
 
-      // Log activity
+      // 4. Log activity
       await tx.activityLog.create({
         data: {
           userId: session.user.id,
@@ -176,7 +188,7 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Create Piutang if payment method is kredit
+      // 5. Create Piutang if payment method is kredit
       if (validatedData.metodePembayaran === "kredit") {
         const deskripsi = validatedData.items
           .map((item) => `${item.namaBarang} x${item.qty}`)
@@ -198,41 +210,42 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // 6. Create accounting journal entry (critical for balance)
+      // Now inside the transaction!
+      await createJournalEntryForCompleteSale(
+        newTransaksi.id,
+        validatedData.total,
+        itemsForAccounting,
+        session.user.id,
+        validatedData.metodePembayaran,
+        tx, // Pass transaction client
+      );
+
       return newTransaksi;
     });
 
-    // Fetch complete transaction data for accounting
+    // Fetch complete transaction data for response
     const completeTransaksi = await prisma.transaksiKasir.findUnique({
-      where: { id: transaksi.id },
+      where: { id: result.id },
       include: {
-        kasir: true,
+        kasir: {
+          select: {
+            id: true,
+            nama: true,
+            username: true,
+          },
+        },
         itemTransaksi: {
           include: {
-            barang: true,
+            barang: {
+              select: {
+                satuan: true,
+              },
+            },
           },
         },
       },
     });
-
-    if (!completeTransaksi) {
-      throw new Error("Failed to fetch complete transaction");
-    }
-
-    // Prepare data for accounting journal entry
-    const totalRevenue = completeTransaksi.total;
-    const items = completeTransaksi.itemTransaksi.map((item) => ({
-      barangId: item.barangId,
-      qty: item.qty,
-      costPrice: item.hargaSatuan, // Assuming this is the cost price
-    }));
-
-    // Create accounting journal entry (critical for balance)
-    await createJournalEntryForCompleteSale(
-      transaksi.id,
-      totalRevenue,
-      items,
-      session.user.id,
-    );
 
     return NextResponse.json(completeTransaksi, { status: 201 });
   } catch (error) {
@@ -242,6 +255,15 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+    // Handle custom errors from transaction
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to create transaction";
+
+    // Check for specific stock error messages
+    if (errorMessage.includes("Stok") || errorMessage.includes("tidak cukup")) {
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
+    }
+
     console.error("Error creating transaksi:", error);
     return NextResponse.json(
       { error: "Failed to create transaction" },

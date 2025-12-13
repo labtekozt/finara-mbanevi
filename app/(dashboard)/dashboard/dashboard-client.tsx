@@ -510,7 +510,7 @@ export function DashboardClient() {
                               key={item.id}
                               className="flex justify-between py-0.5"
                             >
-                              <span>{item.barang.nama}</span>
+                              <span>{item.namaBarang}</span>
                               <span>
                                 {item.qty}x @ Rp{" "}
                                 {item.hargaSatuan.toLocaleString("id-ID")}

@@ -85,10 +85,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (originalTransaksi.qty < validatedData.qty) {
+    // Find previous returns for this transaction
+    const previousReturns = await prisma.transaksiMasuk.findMany({
+      where: {
+        keterangan: {
+          contains: `RETUR ${originalTransaksi.nomorTransaksi}`,
+        },
+      },
+    });
+
+    const alreadyReturnedQty = previousReturns.reduce(
+      (sum, retur) => sum + Math.abs(retur.qty),
+      0,
+    );
+
+    if (alreadyReturnedQty + validatedData.qty > originalTransaksi.qty) {
       return NextResponse.json(
         {
-          error: `Jumlah retur (${validatedData.qty}) melebihi jumlah pembelian (${originalTransaksi.qty})`,
+          error: `Jumlah retur (${validatedData.qty}) melebihi sisa yang bisa diretur (Sisa: ${originalTransaksi.qty - alreadyReturnedQty})`,
         },
         { status: 400 },
       );
@@ -120,7 +134,8 @@ export async function POST(request: NextRequest) {
           totalNilai: -returnAmount, // Negative
           sumber: `Retur: ${originalTransaksi.sumber}`,
           lokasiId: originalTransaksi.lokasiId,
-          keterangan: `RETUR - ${validatedData.alasan}${validatedData.catatan ? ` - ${validatedData.catatan}` : ""}`,
+          // Include original transaction number for tracking
+          keterangan: `RETUR ${originalTransaksi.nomorTransaksi} - ${validatedData.alasan}${validatedData.catatan ? ` - ${validatedData.catatan}` : ""}`,
         },
         include: {
           barang: true,
@@ -150,16 +165,18 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Create accounting journal entry (critical for balance)
+      // Now inside the transaction!
+      await createJournalEntryForPurchaseReturn(
+        returnTransaksi.nomorTransaksi,
+        returnAmount,
+        isCashPurchase,
+        session.user.id,
+        tx, // Pass transaction client
+      );
+
       return returnTransaksi;
     });
-
-    // Create accounting journal entry (critical for balance)
-    await createJournalEntryForPurchaseReturn(
-      retur.nomorTransaksi,
-      returnAmount,
-      isCashPurchase,
-      session.user.id,
-    );
 
     return NextResponse.json(retur, { status: 201 });
   } catch (error) {

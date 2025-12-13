@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { generateTransactionNumber } from "./transaction-number";
+import { Prisma } from "@prisma/client";
 
 // Account codes (these should match your chart of accounts)
 export const ACCOUNT_CODES = {
@@ -27,15 +28,20 @@ export const ACCOUNT_CODES = {
 };
 
 // Get active accounting period
-export async function getActiveAccountingPeriod() {
-  return await prisma.periodeAkuntansi.findFirst({
+export async function getActiveAccountingPeriod(tx?: Prisma.TransactionClient) {
+  const client = tx || prisma;
+  return await client.periodeAkuntansi.findFirst({
     where: { isActive: true },
   });
 }
 
 // Get account by code
-export async function getAccountByCode(code: string) {
-  return await prisma.akun.findFirst({
+export async function getAccountByCode(
+  code: string,
+  tx?: Prisma.TransactionClient,
+) {
+  const client = tx || prisma;
+  return await client.akun.findFirst({
     where: {
       kode: code,
       isActive: true,
@@ -175,27 +181,49 @@ export async function createJournalEntryForCompleteSale(
   totalRevenue: number,
   items: Array<{ barangId: string; qty: number; costPrice: number }>,
   userId: string,
+  paymentMethod: string = "tunai",
+  tx?: Prisma.TransactionClient,
 ) {
-  const periode = await getActiveAccountingPeriod();
+  const client = tx || prisma;
+  const periode = await getActiveAccountingPeriod(client);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
 
-  const cashAccount = await getAccountByCode(ACCOUNT_CODES.CASH);
+  const cashAccount = await getAccountByCode(ACCOUNT_CODES.CASH, client);
+  const accountsReceivableAccount = await getAccountByCode(
+    ACCOUNT_CODES.ACCOUNTS_RECEIVABLE,
+    client,
+  );
   const salesRevenueAccount = await getAccountByCode(
     ACCOUNT_CODES.SALES_REVENUE,
+    client,
   );
-  const inventoryAccount = await getAccountByCode(ACCOUNT_CODES.INVENTORY);
-  const cogsAccount = await getAccountByCode(ACCOUNT_CODES.COST_OF_GOODS_SOLD);
+  const inventoryAccount = await getAccountByCode(
+    ACCOUNT_CODES.INVENTORY,
+    client,
+  );
+  const cogsAccount = await getAccountByCode(
+    ACCOUNT_CODES.COST_OF_GOODS_SOLD,
+    client,
+  );
 
   if (
     !cashAccount ||
+    !accountsReceivableAccount ||
     !salesRevenueAccount ||
     !inventoryAccount ||
     !cogsAccount
   ) {
     throw new Error("Salah satu akun tidak ditemukan");
   }
+
+  // Determine debit account based on payment method
+  const isCredit = paymentMethod === "kredit";
+  const debitAccount = isCredit ? accountsReceivableAccount : cashAccount;
+  const debitDescription = isCredit
+    ? "Piutang usaha dari penjualan kredit"
+    : "Penerimaan kas dari penjualan";
 
   // Calculate total COGS
   const totalCOGS = items.reduce(
@@ -205,11 +233,11 @@ export async function createJournalEntryForCompleteSale(
 
   const nomorJurnal = generateTransactionNumber("JR");
 
-  const jurnalEntry = await prisma.jurnalEntry.create({
+  const jurnalEntry = await client.jurnalEntry.create({
     data: {
       nomorJurnal,
       tanggal: new Date(),
-      deskripsi: `Penjualan Tunai - ${transaksiKasirId}`,
+      deskripsi: `Penjualan ${isCredit ? "Kredit" : "Tunai"} - ${transaksiKasirId}`,
       referensi: transaksiKasirId,
       tipeReferensi: "SALE",
       periodeId: periode.id,
@@ -217,12 +245,12 @@ export async function createJournalEntryForCompleteSale(
       isPosted: true,
       details: {
         create: [
-          // Debit Cash (Asset increases)
+          // Debit Cash or Accounts Receivable (Asset increases)
           {
-            akunId: cashAccount.id,
+            akunId: debitAccount.id,
             debit: totalRevenue,
             kredit: 0,
-            deskripsi: "Penerimaan kas dari penjualan",
+            deskripsi: debitDescription,
           },
           // Debit COGS (Expense increases)
           {
@@ -587,19 +615,28 @@ export async function createJournalEntryForOutgoingTransaction(
   totalAmount: number,
   tujuan: string,
   userId: string,
+  tx?: Prisma.TransactionClient,
 ) {
-  const periode = await getActiveAccountingPeriod();
+  const client = tx || prisma;
+  const periode = await getActiveAccountingPeriod(client);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
 
-  const inventoryAccount = await getAccountByCode(ACCOUNT_CODES.INVENTORY);
-  const cashAccount = await getAccountByCode(ACCOUNT_CODES.CASH);
-  const cogsAccount = await getAccountByCode(ACCOUNT_CODES.COST_OF_GOODS_SOLD);
+  const inventoryAccount = await getAccountByCode(
+    ACCOUNT_CODES.INVENTORY,
+    client,
+  );
+  const cashAccount = await getAccountByCode(ACCOUNT_CODES.CASH, client);
+  const cogsAccount = await getAccountByCode(
+    ACCOUNT_CODES.COST_OF_GOODS_SOLD,
+    client,
+  );
   const otherExpenseAccount = await getAccountByCode(
     ACCOUNT_CODES.OTHER_EXPENSE,
+    client,
   );
-  const otherRevenueAccount = await getAccountByCode("4002"); // Other Revenue
+  const otherRevenueAccount = await getAccountByCode("4002", client); // Other Revenue
 
   if (!inventoryAccount) {
     throw new Error("Akun persediaan tidak ditemukan");
@@ -629,7 +666,7 @@ export async function createJournalEntryForOutgoingTransaction(
 
     const nomorJurnal = generateTransactionNumber("JR");
 
-    const jurnalEntry = await prisma.jurnalEntry.create({
+    const jurnalEntry = await client.jurnalEntry.create({
       data: {
         nomorJurnal,
         tanggal: new Date(),
@@ -684,7 +721,7 @@ export async function createJournalEntryForOutgoingTransaction(
 
   const nomorJurnal = generateTransactionNumber("JR");
 
-  const jurnalEntry = await prisma.jurnalEntry.create({
+  const jurnalEntry = await client.jurnalEntry.create({
     data: {
       nomorJurnal,
       tanggal: new Date(),
@@ -731,19 +768,23 @@ export async function createJournalEntryForPurchaseReturn(
   totalAmount: number,
   isCashPurchase: boolean,
   userId: string,
+  tx?: Prisma.TransactionClient,
 ) {
-  const periode = await getActiveAccountingPeriod();
+  const client = tx || prisma;
+  const periode = await getActiveAccountingPeriod(client);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
 
   const salesRevenueAccount = await getAccountByCode(
     ACCOUNT_CODES.SALES_REVENUE,
+    client,
   );
   const accountsPayableAccount = await getAccountByCode(
     ACCOUNT_CODES.ACCOUNTS_PAYABLE,
+    client,
   );
-  const cashAccount = await getAccountByCode(ACCOUNT_CODES.CASH);
+  const cashAccount = await getAccountByCode(ACCOUNT_CODES.CASH, client);
 
   if (!salesRevenueAccount) {
     throw new Error("Akun pendapatan penjualan tidak ditemukan");
@@ -766,7 +807,7 @@ export async function createJournalEntryForPurchaseReturn(
     userId,
   });
 
-  const jurnalEntry = await prisma.jurnalEntry.create({
+  const jurnalEntry = await client.jurnalEntry.create({
     data: {
       nomorJurnal,
       tanggal: new Date(),
@@ -831,21 +872,31 @@ export async function createJournalEntryForSalesReturn(
   totalCOGS: number,
   paymentMethod: string,
   userId: string,
+  tx?: Prisma.TransactionClient,
 ) {
-  const periode = await getActiveAccountingPeriod();
+  const client = tx || prisma;
+  const periode = await getActiveAccountingPeriod(client);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
 
-  const cashAccount = await getAccountByCode(ACCOUNT_CODES.CASH);
+  const cashAccount = await getAccountByCode(ACCOUNT_CODES.CASH, client);
   const accountsReceivableAccount = await getAccountByCode(
     ACCOUNT_CODES.ACCOUNTS_RECEIVABLE,
+    client,
   );
   const salesRevenueAccount = await getAccountByCode(
     ACCOUNT_CODES.SALES_REVENUE,
+    client,
   );
-  const inventoryAccount = await getAccountByCode(ACCOUNT_CODES.INVENTORY);
-  const cogsAccount = await getAccountByCode(ACCOUNT_CODES.COST_OF_GOODS_SOLD);
+  const inventoryAccount = await getAccountByCode(
+    ACCOUNT_CODES.INVENTORY,
+    client,
+  );
+  const cogsAccount = await getAccountByCode(
+    ACCOUNT_CODES.COST_OF_GOODS_SOLD,
+    client,
+  );
 
   if (!salesRevenueAccount || !inventoryAccount || !cogsAccount) {
     throw new Error("Akun pendapatan, persediaan, atau HPP tidak ditemukan");
@@ -865,7 +916,7 @@ export async function createJournalEntryForSalesReturn(
 
   const nomorJurnal = generateTransactionNumber("JR");
 
-  const jurnalEntry = await prisma.jurnalEntry.create({
+  const jurnalEntry = await client.jurnalEntry.create({
     data: {
       nomorJurnal,
       tanggal: new Date(),
@@ -1014,19 +1065,26 @@ export async function createJournalEntryForStockAddition(
   reason: "PURCHASE" | "STOCK_OPNAME_SURPLUS" | "INTERNAL_ADJUSTMENT",
   userId: string,
   paymentMethod?: "CASH" | "CREDIT",
+  tx?: Prisma.TransactionClient,
 ) {
-  const periode = await getActiveAccountingPeriod();
+  const client = tx || prisma;
+  const periode = await getActiveAccountingPeriod(client);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
 
-  const inventoryAccount = await getAccountByCode(ACCOUNT_CODES.INVENTORY);
-  const cashAccount = await getAccountByCode(ACCOUNT_CODES.CASH);
+  const inventoryAccount = await getAccountByCode(
+    ACCOUNT_CODES.INVENTORY,
+    client,
+  );
+  const cashAccount = await getAccountByCode(ACCOUNT_CODES.CASH, client);
   const accountsPayableAccount = await getAccountByCode(
     ACCOUNT_CODES.ACCOUNTS_PAYABLE,
+    client,
   );
   const otherRevenueAccount = await getAccountByCode(
     ACCOUNT_CODES.OTHER_REVENUE,
+    client,
   );
 
   if (!inventoryAccount) {
@@ -1047,7 +1105,7 @@ export async function createJournalEntryForStockAddition(
       const creditAccount =
         paymentMethod === "CASH" ? cashAccount : accountsPayableAccount;
 
-      jurnalEntry = await prisma.jurnalEntry.create({
+      jurnalEntry = await client.jurnalEntry.create({
         data: {
           nomorJurnal,
           tanggal: new Date(),
@@ -1095,7 +1153,7 @@ export async function createJournalEntryForStockAddition(
         throw new Error("Akun pendapatan lain-lain tidak ditemukan");
       }
 
-      jurnalEntry = await prisma.jurnalEntry.create({
+      jurnalEntry = await client.jurnalEntry.create({
         data: {
           nomorJurnal,
           tanggal: new Date(),
@@ -1140,13 +1198,14 @@ export async function createJournalEntryForStockAddition(
       // For now, we'll use OTHER_EXPENSE, but this could be customized
       const otherExpenseAccount = await getAccountByCode(
         ACCOUNT_CODES.OTHER_EXPENSE,
+        client,
       );
 
       if (!otherExpenseAccount) {
         throw new Error("Akun beban lain-lain tidak ditemukan");
       }
 
-      jurnalEntry = await prisma.jurnalEntry.create({
+      jurnalEntry = await client.jurnalEntry.create({
         data: {
           nomorJurnal,
           tanggal: new Date(),
@@ -1188,6 +1247,140 @@ export async function createJournalEntryForStockAddition(
     default:
       throw new Error(`Tipe penambahan stok tidak valid: ${reason}`);
   }
+
+  return jurnalEntry;
+}
+
+// Create journal entry for debt payment (Hutang)
+export async function createJournalEntryForDebtPayment(
+  hutangId: string,
+  amount: number,
+  userId: string,
+  paymentMethod: string = "tunai",
+  tx?: Prisma.TransactionClient,
+) {
+  const client = tx || prisma;
+  const periode = await getActiveAccountingPeriod(client);
+  if (!periode) {
+    throw new Error("Tidak ada periode akuntansi aktif");
+  }
+
+  const accountsPayableAccount = await getAccountByCode(
+    ACCOUNT_CODES.ACCOUNTS_PAYABLE,
+    client,
+  );
+  const cashAccount = await getAccountByCode(ACCOUNT_CODES.CASH, client);
+
+  if (!accountsPayableAccount || !cashAccount) {
+    throw new Error("Akun hutang atau kas tidak ditemukan");
+  }
+
+  const nomorJurnal = generateTransactionNumber("JR");
+
+  const jurnalEntry = await client.jurnalEntry.create({
+    data: {
+      nomorJurnal,
+      tanggal: new Date(),
+      deskripsi: `Pembayaran Hutang - ${hutangId}`,
+      referensi: hutangId,
+      tipeReferensi: "DEBT_PAYMENT",
+      periodeId: periode.id,
+      userId,
+      isPosted: true,
+      details: {
+        create: [
+          // Debit Accounts Payable (Liability decreases)
+          {
+            akunId: accountsPayableAccount.id,
+            debit: amount,
+            kredit: 0,
+            deskripsi: "Pembayaran hutang usaha",
+          },
+          // Credit Cash (Asset decreases)
+          {
+            akunId: cashAccount.id,
+            debit: 0,
+            kredit: amount,
+            deskripsi: `Pembayaran hutang via ${paymentMethod}`,
+          },
+        ],
+      },
+    },
+    include: {
+      details: {
+        include: {
+          akun: true,
+        },
+      },
+    },
+  });
+
+  return jurnalEntry;
+}
+
+// Create journal entry for receivable payment (Piutang)
+export async function createJournalEntryForReceivablePayment(
+  piutangId: string,
+  amount: number,
+  userId: string,
+  paymentMethod: string = "tunai",
+  tx?: Prisma.TransactionClient,
+) {
+  const client = tx || prisma;
+  const periode = await getActiveAccountingPeriod(client);
+  if (!periode) {
+    throw new Error("Tidak ada periode akuntansi aktif");
+  }
+
+  const accountsReceivableAccount = await getAccountByCode(
+    ACCOUNT_CODES.ACCOUNTS_RECEIVABLE,
+    client,
+  );
+  const cashAccount = await getAccountByCode(ACCOUNT_CODES.CASH, client);
+
+  if (!accountsReceivableAccount || !cashAccount) {
+    throw new Error("Akun piutang atau kas tidak ditemukan");
+  }
+
+  const nomorJurnal = generateTransactionNumber("JR");
+
+  const jurnalEntry = await client.jurnalEntry.create({
+    data: {
+      nomorJurnal,
+      tanggal: new Date(),
+      deskripsi: `Penerimaan Piutang - ${piutangId}`,
+      referensi: piutangId,
+      tipeReferensi: "RECEIVABLE_PAYMENT",
+      periodeId: periode.id,
+      userId,
+      isPosted: true,
+      details: {
+        create: [
+          // Debit Cash (Asset increases)
+          {
+            akunId: cashAccount.id,
+            debit: amount,
+            kredit: 0,
+            deskripsi: `Penerimaan piutang via ${paymentMethod}`,
+          },
+          // Credit Accounts Receivable (Asset decreases)
+          {
+            akunId: accountsReceivableAccount.id,
+            debit: 0,
+            kredit: amount,
+            deskripsi: "Pelunasan piutang usaha",
+          },
+        ],
+      },
+    },
+    include: {
+      details: {
+        include: {
+          akun: true,
+        },
+      },
+    },
+  });
 
   return jurnalEntry;
 }

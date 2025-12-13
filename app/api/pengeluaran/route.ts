@@ -121,15 +121,8 @@ export async function POST(request: Request) {
       });
 
       // Create journal entry for expense
-      try {
-        await createJournalEntryForExpense(tx, pengeluaran, session.user.id);
-      } catch (journalError) {
-        console.error(
-          "Error creating journal entry for expense:",
-          journalError,
-        );
-        // Don't fail the expense creation if journal entry fails
-      }
+      // Removed try-catch to ensure atomicity. If journal fails, expense creation must rollback.
+      await createJournalEntryForExpense(tx, pengeluaran, session.user.id);
 
       // Log activity
       await tx.activityLog.create({

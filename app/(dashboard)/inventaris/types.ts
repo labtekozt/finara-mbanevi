@@ -54,7 +54,10 @@ export interface ItemTransaksiKasir {
   qty: number;
   hargaSatuan: number;
   subtotal: number;
-  barang: Barang;
+  barangId: string;
+  barang: {
+    satuan: string;
+  };
 }
 
 export interface TransaksiKasir {

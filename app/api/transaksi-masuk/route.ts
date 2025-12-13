@@ -139,17 +139,19 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Create accounting journal entry (critical for balance)
+      // Now inside the transaction!
+      await createJournalEntryForStockAddition(
+        newTransaksi.id,
+        totalNilai,
+        validatedData.reason,
+        session.user.id,
+        validatedData.paymentMethod,
+        tx, // Pass transaction client
+      );
+
       return newTransaksi;
     });
-
-    // Create accounting journal entry (critical for balance)
-    await createJournalEntryForStockAddition(
-      transaksi.id,
-      totalNilai,
-      validatedData.reason,
-      session.user.id,
-      validatedData.paymentMethod,
-    );
 
     return NextResponse.json(transaksi, { status: 201 });
   } catch (error) {

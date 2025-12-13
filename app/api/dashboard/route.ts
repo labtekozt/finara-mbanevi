@@ -118,12 +118,14 @@ export async function GET(request: Request) {
         tanggal: "desc",
       },
       include: {
-        kasir: true,
-        itemTransaksi: {
-          include: {
-            barang: true,
+        kasir: {
+          select: {
+            id: true,
+            nama: true,
+            username: true,
           },
         },
+        itemTransaksi: true,
       },
     });
 

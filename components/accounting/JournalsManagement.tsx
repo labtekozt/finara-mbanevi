@@ -36,7 +36,11 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { TabsContent } from "@/components/ui/tabs";
-import { StyledTabs, StyledTabsList, StyledTabsTrigger } from "@/components/ui/styled-tabs";
+import {
+  StyledTabs,
+  StyledTabsList,
+  StyledTabsTrigger,
+} from "@/components/ui/styled-tabs";
 import {
   BookOpen,
   Plus,

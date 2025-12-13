@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching hutang:", error);
     return NextResponse.json(
       { error: "Failed to fetch hutang" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

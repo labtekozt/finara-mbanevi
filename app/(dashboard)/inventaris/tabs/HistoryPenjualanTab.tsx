@@ -25,13 +25,13 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Package, TrendingDown } from "lucide-react";
 import { format } from "date-fns";
 import { StatsGrid } from "@/components/inventory";
-import { TransaksiKasir } from "../types";
+import { TransaksiKasir, ItemTransaksiKasir } from "../types";
 import { ReactNode } from "react";
 
 interface HistoryPenjualanTabProps {
   // Data
   sortedTransaksiKasir: TransaksiKasir[];
-  paginatedTransaksiKasir: Array<{ tr: TransaksiKasir; item: any }>;
+  paginatedTransaksiKasir: Array<{ tr: TransaksiKasir; item: ItemTransaksiKasir }>;
   startDateKasir: string;
   endDateKasir: string;
 
@@ -81,7 +81,7 @@ export function HistoryPenjualanTab({
                   const uniqueBarangIds = new Set<string>();
                   sortedTransaksiKasir.forEach((tr) => {
                     tr.itemTransaksi.forEach((item) => {
-                      uniqueBarangIds.add(item.barang.id);
+                      uniqueBarangIds.add(item.barangId);
                     });
                   });
                   return uniqueBarangIds.size;

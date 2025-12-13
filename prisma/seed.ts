@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { hash } from "bcryptjs";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -15,7 +15,7 @@ async function main() {
       nama: "Administrator",
       username: "admin",
       email: "admin@finara.com",
-      password: await hash("admin123", 10),
+      password: await bcrypt.hash("admin123", 10),
       role: "ADMIN",
     },
   });
@@ -27,7 +27,7 @@ async function main() {
       nama: "Kasir Toko",
       username: "kasir",
       email: "kasir@finara.com",
-      password: await hash("kasir123", 10),
+      password: await bcrypt.hash("kasir123", 10),
       role: "KASIR",
     },
   });
@@ -39,7 +39,7 @@ async function main() {
       nama: "Petugas Gudang",
       username: "gudang",
       email: "gudang@finara.com",
-      password: await hash("gudang123", 10),
+      password: await bcrypt.hash("gudang123", 10),
       role: "GUDANG",
     },
   });
@@ -51,7 +51,7 @@ async function main() {
       nama: "Manajer Toko",
       username: "manajer",
       email: "manajer@finara.com",
-      password: await hash("manajer123", 10),
+      password: await bcrypt.hash("manajer123", 10),
       role: "MANAJER",
     },
   });
@@ -290,271 +290,271 @@ async function main() {
   // Create sample products
   console.log("Creating sample products...");
 
-  // Product categories and templates
-  const categories = [
-    "Bahan Pokok",
-    "Minuman",
-    "Snack",
-    "Bumbu Dapur",
-    "Produk Susu",
-    "Produk Beku",
-    "Makanan Kaleng",
-    "Kesehatan & Kecantikan",
-    "Peralatan Rumah Tangga",
-    "Elektronik",
-    "Pakaian",
-    "Mainan",
-    "Buku & Alat Tulis",
-    "Olahraga",
-    "Otomotif",
-  ];
+  // // Product categories and templates
+  // const categories = [
+  //   "Bahan Pokok",
+  //   "Minuman",
+  //   "Snack",
+  //   "Bumbu Dapur",
+  //   "Produk Susu",
+  //   "Produk Beku",
+  //   "Makanan Kaleng",
+  //   "Kesehatan & Kecantikan",
+  //   "Peralatan Rumah Tangga",
+  //   "Elektronik",
+  //   "Pakaian",
+  //   "Mainan",
+  //   "Buku & Alat Tulis",
+  //   "Olahraga",
+  //   "Otomotif",
+  // ];
 
-  const productTemplates = {
-    "Bahan Pokok": [
-      { name: "Beras Premium", unit: "kg", basePrice: 12000, markup: 1.25 },
-      { name: "Gula Pasir", unit: "kg", basePrice: 10000, markup: 1.4 },
-      { name: "Minyak Goreng", unit: "liter", basePrice: 15000, markup: 1.3 },
-      { name: "Tepung Terigu", unit: "kg", basePrice: 8000, markup: 1.35 },
-      { name: "Garam Dapur", unit: "kg", basePrice: 3000, markup: 1.5 },
-      { name: "Kopi Bubuk", unit: "kg", basePrice: 25000, markup: 1.4 },
-      { name: "Teh Celup", unit: "pak", basePrice: 5000, markup: 1.6 },
-      {
-        name: "Susu Kental Manis",
-        unit: "kaleng",
-        basePrice: 12000,
-        markup: 1.3,
-      },
-      { name: "Kecap Manis", unit: "botol", basePrice: 8000, markup: 1.4 },
-      { name: "Saus Tomat", unit: "botol", basePrice: 7000, markup: 1.35 },
-    ],
-    Minuman: [
-      { name: "Air Mineral", unit: "galon", basePrice: 18000, markup: 1.2 },
-      { name: "Jus Buah", unit: "botol", basePrice: 8000, markup: 1.5 },
-      { name: "Soda", unit: "kaleng", basePrice: 5000, markup: 1.4 },
-      { name: "Teh Botol", unit: "botol", basePrice: 4000, markup: 1.6 },
-      { name: "Kopi Instan", unit: "sachet", basePrice: 2000, markup: 1.8 },
-      { name: "Susu UHT", unit: "pak", basePrice: 6000, markup: 1.3 },
-      { name: "Minuman Isotonik", unit: "botol", basePrice: 7000, markup: 1.4 },
-      { name: "Sirup", unit: "botol", basePrice: 15000, markup: 1.3 },
-    ],
-    Snack: [
-      { name: "Keripik Kentang", unit: "pak", basePrice: 8000, markup: 1.5 },
-      { name: "Biskuit", unit: "pak", basePrice: 6000, markup: 1.6 },
-      { name: "Cokelat Batang", unit: "batang", basePrice: 10000, markup: 1.4 },
-      { name: "Permen", unit: "pak", basePrice: 3000, markup: 1.7 },
-      { name: "Kacang Goreng", unit: "pak", basePrice: 12000, markup: 1.4 },
-      { name: "Wafer", unit: "pak", basePrice: 7000, markup: 1.5 },
-      { name: "Snack Stick", unit: "pak", basePrice: 5000, markup: 1.6 },
-      { name: "Popcorn", unit: "pak", basePrice: 9000, markup: 1.4 },
-    ],
-    "Bumbu Dapur": [
-      { name: "Bawang Putih", unit: "kg", basePrice: 25000, markup: 1.3 },
-      { name: "Bawang Merah", unit: "kg", basePrice: 20000, markup: 1.35 },
-      { name: "Cabe Merah", unit: "kg", basePrice: 30000, markup: 1.25 },
-      { name: "Cabe Rawit", unit: "kg", basePrice: 35000, markup: 1.2 },
-      { name: "Jahe", unit: "kg", basePrice: 15000, markup: 1.4 },
-      { name: "Kunyit", unit: "kg", basePrice: 12000, markup: 1.45 },
-      { name: "Lengkuas", unit: "kg", basePrice: 18000, markup: 1.35 },
-      { name: "Kemiri", unit: "kg", basePrice: 40000, markup: 1.2 },
-    ],
-    "Produk Susu": [
-      { name: "Keju Cheddar", unit: "blok", basePrice: 45000, markup: 1.3 },
-      { name: "Yogurt", unit: "pot", basePrice: 8000, markup: 1.4 },
-      { name: "Mentega", unit: "blok", basePrice: 25000, markup: 1.35 },
-      { name: "Krim Kental", unit: "kaleng", basePrice: 15000, markup: 1.3 },
-      { name: "Susu Bubuk", unit: "kg", basePrice: 35000, markup: 1.25 },
-      { name: "Es Krim", unit: "liter", basePrice: 30000, markup: 1.4 },
-    ],
-    "Produk Beku": [
-      { name: "Ayam Fillet", unit: "kg", basePrice: 35000, markup: 1.3 },
-      { name: "Ikan Tuna", unit: "kg", basePrice: 45000, markup: 1.25 },
-      { name: "Udang", unit: "kg", basePrice: 55000, markup: 1.2 },
-      { name: "Bakso", unit: "pak", basePrice: 25000, markup: 1.4 },
-      { name: "Nugget", unit: "pak", basePrice: 30000, markup: 1.35 },
-      { name: "Sosis", unit: "pak", basePrice: 28000, markup: 1.4 },
-    ],
-    "Makanan Kaleng": [
-      { name: "Sarden", unit: "kaleng", basePrice: 15000, markup: 1.3 },
-      { name: "Kornet", unit: "kaleng", basePrice: 18000, markup: 1.35 },
-      { name: "Buah Kaleng", unit: "kaleng", basePrice: 20000, markup: 1.3 },
-      { name: "Sayur Kaleng", unit: "kaleng", basePrice: 12000, markup: 1.4 },
-      { name: "Sup Kaleng", unit: "kaleng", basePrice: 10000, markup: 1.45 },
-    ],
-    "Kesehatan & Kecantikan": [
-      { name: "Sabun Mandi", unit: "batang", basePrice: 5000, markup: 1.6 },
-      { name: "Shampoo", unit: "botol", basePrice: 15000, markup: 1.4 },
-      { name: "Pasta Gigi", unit: "tube", basePrice: 8000, markup: 1.5 },
-      { name: "Deodorant", unit: "botol", basePrice: 20000, markup: 1.35 },
-      { name: "Masker Wajah", unit: "pak", basePrice: 25000, markup: 1.3 },
-      { name: "Vitamin", unit: "botol", basePrice: 35000, markup: 1.25 },
-    ],
-    "Peralatan Rumah Tangga": [
-      { name: "Sapu", unit: "buah", basePrice: 25000, markup: 1.4 },
-      { name: "Pel", unit: "buah", basePrice: 15000, markup: 1.5 },
-      { name: "Ember", unit: "buah", basePrice: 30000, markup: 1.3 },
-      { name: "Kain Lap", unit: "pak", basePrice: 12000, markup: 1.6 },
-      { name: "Detergen", unit: "pak", basePrice: 18000, markup: 1.4 },
-      {
-        name: "Pewangi Ruangan",
-        unit: "botol",
-        basePrice: 22000,
-        markup: 1.35,
-      },
-    ],
-    Elektronik: [
-      { name: "Baterai AA", unit: "pak", basePrice: 15000, markup: 1.4 },
-      { name: "Kabel USB", unit: "buah", basePrice: 25000, markup: 1.3 },
-      { name: "Power Bank", unit: "buah", basePrice: 150000, markup: 1.2 },
-      { name: "Earphone", unit: "buah", basePrice: 75000, markup: 1.25 },
-      { name: "Charger HP", unit: "buah", basePrice: 45000, markup: 1.3 },
-      { name: "Memory Card", unit: "buah", basePrice: 80000, markup: 1.2 },
-    ],
-    Pakaian: [
-      { name: "Kaos Polos", unit: "buah", basePrice: 35000, markup: 1.5 },
-      { name: "Celana Jeans", unit: "buah", basePrice: 150000, markup: 1.3 },
-      { name: "Jaket", unit: "buah", basePrice: 200000, markup: 1.25 },
-      {
-        name: "Sepatu Sneakers",
-        unit: "pasang",
-        basePrice: 250000,
-        markup: 1.2,
-      },
-      { name: "Topi", unit: "buah", basePrice: 45000, markup: 1.4 },
-      { name: "Sarung Tangan", unit: "pasang", basePrice: 25000, markup: 1.5 },
-    ],
-    Mainan: [
-      { name: "Boneka", unit: "buah", basePrice: 75000, markup: 1.4 },
-      { name: "Lego", unit: "set", basePrice: 150000, markup: 1.3 },
-      { name: "Puzzle", unit: "buah", basePrice: 45000, markup: 1.5 },
-      { name: "Mobil Remote", unit: "buah", basePrice: 200000, markup: 1.25 },
-      { name: "Balon", unit: "pak", basePrice: 15000, markup: 1.6 },
-      { name: "Kartu Permainan", unit: "pak", basePrice: 35000, markup: 1.4 },
-    ],
-    "Buku & Alat Tulis": [
-      { name: "Buku Tulis", unit: "buah", basePrice: 8000, markup: 1.5 },
-      { name: "Pensil", unit: "pak", basePrice: 12000, markup: 1.4 },
-      { name: "Pulpen", unit: "buah", basePrice: 5000, markup: 1.6 },
-      { name: "Penghapus", unit: "buah", basePrice: 3000, markup: 1.7 },
-      { name: "Penggaris", unit: "buah", basePrice: 8000, markup: 1.5 },
-      { name: "Buku Gambar", unit: "buah", basePrice: 15000, markup: 1.4 },
-    ],
-    Olahraga: [
-      { name: "Bola Basket", unit: "buah", basePrice: 150000, markup: 1.3 },
-      {
-        name: "Raket Badminton",
-        unit: "buah",
-        basePrice: 200000,
-        markup: 1.25,
-      },
-      { name: "Sepeda", unit: "buah", basePrice: 1500000, markup: 1.15 },
-      { name: "Matras Yoga", unit: "buah", basePrice: 100000, markup: 1.4 },
-      { name: "Dumbbell", unit: "set", basePrice: 250000, markup: 1.2 },
-      {
-        name: "Sepatu Olahraga",
-        unit: "pasang",
-        basePrice: 300000,
-        markup: 1.25,
-      },
-    ],
-    Otomotif: [
-      { name: "Oli Mesin", unit: "liter", basePrice: 45000, markup: 1.3 },
-      { name: "Busi", unit: "buah", basePrice: 25000, markup: 1.4 },
-      { name: "Wiper", unit: "pasang", basePrice: 75000, markup: 1.35 },
-      { name: "Aki Mobil", unit: "buah", basePrice: 500000, markup: 1.2 },
-      { name: "Ban Dalam", unit: "buah", basePrice: 150000, markup: 1.25 },
-      { name: "Filter Udara", unit: "buah", basePrice: 80000, markup: 1.3 },
-    ],
-  };
+  // const productTemplates = {
+  //   "Bahan Pokok": [
+  //     { name: "Beras Premium", unit: "kg", basePrice: 12000, markup: 1.25 },
+  //     { name: "Gula Pasir", unit: "kg", basePrice: 10000, markup: 1.4 },
+  //     { name: "Minyak Goreng", unit: "liter", basePrice: 15000, markup: 1.3 },
+  //     { name: "Tepung Terigu", unit: "kg", basePrice: 8000, markup: 1.35 },
+  //     { name: "Garam Dapur", unit: "kg", basePrice: 3000, markup: 1.5 },
+  //     { name: "Kopi Bubuk", unit: "kg", basePrice: 25000, markup: 1.4 },
+  //     { name: "Teh Celup", unit: "pak", basePrice: 5000, markup: 1.6 },
+  //     {
+  //       name: "Susu Kental Manis",
+  //       unit: "kaleng",
+  //       basePrice: 12000,
+  //       markup: 1.3,
+  //     },
+  //     { name: "Kecap Manis", unit: "botol", basePrice: 8000, markup: 1.4 },
+  //     { name: "Saus Tomat", unit: "botol", basePrice: 7000, markup: 1.35 },
+  //   ],
+  //   Minuman: [
+  //     { name: "Air Mineral", unit: "galon", basePrice: 18000, markup: 1.2 },
+  //     { name: "Jus Buah", unit: "botol", basePrice: 8000, markup: 1.5 },
+  //     { name: "Soda", unit: "kaleng", basePrice: 5000, markup: 1.4 },
+  //     { name: "Teh Botol", unit: "botol", basePrice: 4000, markup: 1.6 },
+  //     { name: "Kopi Instan", unit: "sachet", basePrice: 2000, markup: 1.8 },
+  //     { name: "Susu UHT", unit: "pak", basePrice: 6000, markup: 1.3 },
+  //     { name: "Minuman Isotonik", unit: "botol", basePrice: 7000, markup: 1.4 },
+  //     { name: "Sirup", unit: "botol", basePrice: 15000, markup: 1.3 },
+  //   ],
+  //   Snack: [
+  //     { name: "Keripik Kentang", unit: "pak", basePrice: 8000, markup: 1.5 },
+  //     { name: "Biskuit", unit: "pak", basePrice: 6000, markup: 1.6 },
+  //     { name: "Cokelat Batang", unit: "batang", basePrice: 10000, markup: 1.4 },
+  //     { name: "Permen", unit: "pak", basePrice: 3000, markup: 1.7 },
+  //     { name: "Kacang Goreng", unit: "pak", basePrice: 12000, markup: 1.4 },
+  //     { name: "Wafer", unit: "pak", basePrice: 7000, markup: 1.5 },
+  //     { name: "Snack Stick", unit: "pak", basePrice: 5000, markup: 1.6 },
+  //     { name: "Popcorn", unit: "pak", basePrice: 9000, markup: 1.4 },
+  //   ],
+  //   "Bumbu Dapur": [
+  //     { name: "Bawang Putih", unit: "kg", basePrice: 25000, markup: 1.3 },
+  //     { name: "Bawang Merah", unit: "kg", basePrice: 20000, markup: 1.35 },
+  //     { name: "Cabe Merah", unit: "kg", basePrice: 30000, markup: 1.25 },
+  //     { name: "Cabe Rawit", unit: "kg", basePrice: 35000, markup: 1.2 },
+  //     { name: "Jahe", unit: "kg", basePrice: 15000, markup: 1.4 },
+  //     { name: "Kunyit", unit: "kg", basePrice: 12000, markup: 1.45 },
+  //     { name: "Lengkuas", unit: "kg", basePrice: 18000, markup: 1.35 },
+  //     { name: "Kemiri", unit: "kg", basePrice: 40000, markup: 1.2 },
+  //   ],
+  //   "Produk Susu": [
+  //     { name: "Keju Cheddar", unit: "blok", basePrice: 45000, markup: 1.3 },
+  //     { name: "Yogurt", unit: "pot", basePrice: 8000, markup: 1.4 },
+  //     { name: "Mentega", unit: "blok", basePrice: 25000, markup: 1.35 },
+  //     { name: "Krim Kental", unit: "kaleng", basePrice: 15000, markup: 1.3 },
+  //     { name: "Susu Bubuk", unit: "kg", basePrice: 35000, markup: 1.25 },
+  //     { name: "Es Krim", unit: "liter", basePrice: 30000, markup: 1.4 },
+  //   ],
+  //   "Produk Beku": [
+  //     { name: "Ayam Fillet", unit: "kg", basePrice: 35000, markup: 1.3 },
+  //     { name: "Ikan Tuna", unit: "kg", basePrice: 45000, markup: 1.25 },
+  //     { name: "Udang", unit: "kg", basePrice: 55000, markup: 1.2 },
+  //     { name: "Bakso", unit: "pak", basePrice: 25000, markup: 1.4 },
+  //     { name: "Nugget", unit: "pak", basePrice: 30000, markup: 1.35 },
+  //     { name: "Sosis", unit: "pak", basePrice: 28000, markup: 1.4 },
+  //   ],
+  //   "Makanan Kaleng": [
+  //     { name: "Sarden", unit: "kaleng", basePrice: 15000, markup: 1.3 },
+  //     { name: "Kornet", unit: "kaleng", basePrice: 18000, markup: 1.35 },
+  //     { name: "Buah Kaleng", unit: "kaleng", basePrice: 20000, markup: 1.3 },
+  //     { name: "Sayur Kaleng", unit: "kaleng", basePrice: 12000, markup: 1.4 },
+  //     { name: "Sup Kaleng", unit: "kaleng", basePrice: 10000, markup: 1.45 },
+  //   ],
+  //   "Kesehatan & Kecantikan": [
+  //     { name: "Sabun Mandi", unit: "batang", basePrice: 5000, markup: 1.6 },
+  //     { name: "Shampoo", unit: "botol", basePrice: 15000, markup: 1.4 },
+  //     { name: "Pasta Gigi", unit: "tube", basePrice: 8000, markup: 1.5 },
+  //     { name: "Deodorant", unit: "botol", basePrice: 20000, markup: 1.35 },
+  //     { name: "Masker Wajah", unit: "pak", basePrice: 25000, markup: 1.3 },
+  //     { name: "Vitamin", unit: "botol", basePrice: 35000, markup: 1.25 },
+  //   ],
+  //   "Peralatan Rumah Tangga": [
+  //     { name: "Sapu", unit: "buah", basePrice: 25000, markup: 1.4 },
+  //     { name: "Pel", unit: "buah", basePrice: 15000, markup: 1.5 },
+  //     { name: "Ember", unit: "buah", basePrice: 30000, markup: 1.3 },
+  //     { name: "Kain Lap", unit: "pak", basePrice: 12000, markup: 1.6 },
+  //     { name: "Detergen", unit: "pak", basePrice: 18000, markup: 1.4 },
+  //     {
+  //       name: "Pewangi Ruangan",
+  //       unit: "botol",
+  //       basePrice: 22000,
+  //       markup: 1.35,
+  //     },
+  //   ],
+  //   Elektronik: [
+  //     { name: "Baterai AA", unit: "pak", basePrice: 15000, markup: 1.4 },
+  //     { name: "Kabel USB", unit: "buah", basePrice: 25000, markup: 1.3 },
+  //     { name: "Power Bank", unit: "buah", basePrice: 150000, markup: 1.2 },
+  //     { name: "Earphone", unit: "buah", basePrice: 75000, markup: 1.25 },
+  //     { name: "Charger HP", unit: "buah", basePrice: 45000, markup: 1.3 },
+  //     { name: "Memory Card", unit: "buah", basePrice: 80000, markup: 1.2 },
+  //   ],
+  //   Pakaian: [
+  //     { name: "Kaos Polos", unit: "buah", basePrice: 35000, markup: 1.5 },
+  //     { name: "Celana Jeans", unit: "buah", basePrice: 150000, markup: 1.3 },
+  //     { name: "Jaket", unit: "buah", basePrice: 200000, markup: 1.25 },
+  //     {
+  //       name: "Sepatu Sneakers",
+  //       unit: "pasang",
+  //       basePrice: 250000,
+  //       markup: 1.2,
+  //     },
+  //     { name: "Topi", unit: "buah", basePrice: 45000, markup: 1.4 },
+  //     { name: "Sarung Tangan", unit: "pasang", basePrice: 25000, markup: 1.5 },
+  //   ],
+  //   Mainan: [
+  //     { name: "Boneka", unit: "buah", basePrice: 75000, markup: 1.4 },
+  //     { name: "Lego", unit: "set", basePrice: 150000, markup: 1.3 },
+  //     { name: "Puzzle", unit: "buah", basePrice: 45000, markup: 1.5 },
+  //     { name: "Mobil Remote", unit: "buah", basePrice: 200000, markup: 1.25 },
+  //     { name: "Balon", unit: "pak", basePrice: 15000, markup: 1.6 },
+  //     { name: "Kartu Permainan", unit: "pak", basePrice: 35000, markup: 1.4 },
+  //   ],
+  //   "Buku & Alat Tulis": [
+  //     { name: "Buku Tulis", unit: "buah", basePrice: 8000, markup: 1.5 },
+  //     { name: "Pensil", unit: "pak", basePrice: 12000, markup: 1.4 },
+  //     { name: "Pulpen", unit: "buah", basePrice: 5000, markup: 1.6 },
+  //     { name: "Penghapus", unit: "buah", basePrice: 3000, markup: 1.7 },
+  //     { name: "Penggaris", unit: "buah", basePrice: 8000, markup: 1.5 },
+  //     { name: "Buku Gambar", unit: "buah", basePrice: 15000, markup: 1.4 },
+  //   ],
+  //   Olahraga: [
+  //     { name: "Bola Basket", unit: "buah", basePrice: 150000, markup: 1.3 },
+  //     {
+  //       name: "Raket Badminton",
+  //       unit: "buah",
+  //       basePrice: 200000,
+  //       markup: 1.25,
+  //     },
+  //     { name: "Sepeda", unit: "buah", basePrice: 1500000, markup: 1.15 },
+  //     { name: "Matras Yoga", unit: "buah", basePrice: 100000, markup: 1.4 },
+  //     { name: "Dumbbell", unit: "set", basePrice: 250000, markup: 1.2 },
+  //     {
+  //       name: "Sepatu Olahraga",
+  //       unit: "pasang",
+  //       basePrice: 300000,
+  //       markup: 1.25,
+  //     },
+  //   ],
+  //   Otomotif: [
+  //     { name: "Oli Mesin", unit: "liter", basePrice: 45000, markup: 1.3 },
+  //     { name: "Busi", unit: "buah", basePrice: 25000, markup: 1.4 },
+  //     { name: "Wiper", unit: "pasang", basePrice: 75000, markup: 1.35 },
+  //     { name: "Aki Mobil", unit: "buah", basePrice: 500000, markup: 1.2 },
+  //     { name: "Ban Dalam", unit: "buah", basePrice: 150000, markup: 1.25 },
+  //     { name: "Filter Udara", unit: "buah", basePrice: 80000, markup: 1.3 },
+  //   ],
+  // };
 
-  // Generate 1000 products
-  const products = [];
-  let productCounter = 1;
+  // // Generate 1000 products
+  // const products = [];
+  // let productCounter = 1;
 
-  for (let i = 0; i < 1000; i++) {
-    // Randomly select category and template
-    const category = categories[Math.floor(Math.random() * categories.length)];
-    const templates =
-      productTemplates[category as keyof typeof productTemplates];
-    const template = templates[Math.floor(Math.random() * templates.length)];
+  // for (let i = 0; i < 1000; i++) {
+  //   // Randomly select category and template
+  //   const category = categories[Math.floor(Math.random() * categories.length)];
+  //   const templates =
+  //     productTemplates[category as keyof typeof productTemplates];
+  //   const template = templates[Math.floor(Math.random() * templates.length)];
 
-    // Generate variations
-    const variations = [
-      "Premium",
-      "Regular",
-      "Ekonomis",
-      "Super",
-      "Extra",
-      "Plus",
-      "Max",
-      "Pro",
-    ];
-    const brands = [
-      "ABC",
-      "XYZ",
-      "Super",
-      "Best",
-      "Top",
-      "Prima",
-      "Elite",
-      "Gold",
-    ];
-    const sizes = [
-      "Kecil",
-      "Sedang",
-      "Besar",
-      "Jumbo",
-      "Mini",
-      "Large",
-      "Small",
-    ];
+  //   // Generate variations
+  //   const variations = [
+  //     "Premium",
+  //     "Regular",
+  //     "Ekonomis",
+  //     "Super",
+  //     "Extra",
+  //     "Plus",
+  //     "Max",
+  //     "Pro",
+  //   ];
+  //   const brands = [
+  //     "ABC",
+  //     "XYZ",
+  //     "Super",
+  //     "Best",
+  //     "Top",
+  //     "Prima",
+  //     "Elite",
+  //     "Gold",
+  //   ];
+  //   const sizes = [
+  //     "Kecil",
+  //     "Sedang",
+  //     "Besar",
+  //     "Jumbo",
+  //     "Mini",
+  //     "Large",
+  //     "Small",
+  //   ];
 
-    const variation = variations[Math.floor(Math.random() * variations.length)];
-    const brand = brands[Math.floor(Math.random() * brands.length)];
-    const size = sizes[Math.floor(Math.random() * sizes.length)];
+  //   const variation = variations[Math.floor(Math.random() * variations.length)];
+  //   const brand = brands[Math.floor(Math.random() * brands.length)];
+  //   const size = sizes[Math.floor(Math.random() * sizes.length)];
 
-    // Create product name
-    const productName = `${brand} ${template.name} ${variation} ${size}`;
+  //   // Create product name
+  //   const productName = `${brand} ${template.name} ${variation} ${size}`;
 
-    // Generate SKU
-    const sku = `${category.substring(0, 3).toUpperCase()}-${String(productCounter).padStart(3, "0")}`;
+  //   // Generate SKU
+  //   const sku = `${category.substring(0, 3).toUpperCase()}-${String(productCounter).padStart(3, "0")}`;
 
-    // Calculate prices with some randomization
-    const priceVariation = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
-    const hargaBeli = Math.round(template.basePrice * priceVariation);
-    const hargaJual = Math.round(
-      hargaBeli * template.markup * (0.95 + Math.random() * 0.1),
-    ); // Add some markup variation
+  //   // Calculate prices with some randomization
+  //   const priceVariation = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+  //   const hargaBeli = Math.round(template.basePrice * priceVariation);
+  //   const hargaJual = Math.round(
+  //     hargaBeli * template.markup * (0.95 + Math.random() * 0.1),
+  //   ); // Add some markup variation
 
-    // Random stock levels
-    const stok = Math.floor(Math.random() * 100) + 10; // 10-110
-    const stokMinimum = Math.floor(stok * 0.2) + 5; // 20% of stock + 5
+  //   // Random stock levels
+  //   const stok = Math.floor(Math.random() * 100) + 10; // 10-110
+  //   const stokMinimum = Math.floor(stok * 0.2) + 5; // 20% of stock + 5
 
-    // Random location
-    const lokasiId = Math.random() > 0.5 ? gudangUtama.id : gudangCabang.id;
+  //   // Random location
+  //   const lokasiId = Math.random() > 0.5 ? gudangUtama.id : gudangCabang.id;
 
-    products.push({
-      nama: productName,
-      sku: sku,
-      kategori: category,
-      stok: stok,
-      stokMinimum: stokMinimum,
-      hargaBeli: hargaBeli,
-      hargaJual: hargaJual,
-      satuan: template.unit,
-      deskripsi: `${productName} - ${category}`,
-      lokasiId: lokasiId,
-    });
+  //   products.push({
+  //     nama: productName,
+  //     sku: sku,
+  //     kategori: category,
+  //     stok: stok,
+  //     stokMinimum: stokMinimum,
+  //     hargaBeli: hargaBeli,
+  //     hargaJual: hargaJual,
+  //     satuan: template.unit,
+  //     deskripsi: `${productName} - ${category}`,
+  //     lokasiId: lokasiId,
+  //   });
 
-    productCounter++;
-  }
+  //   productCounter++;
+  // }
 
-  for (const product of products) {
-    await prisma.barang.create({
-      data: product,
-    });
-  }
+  // for (const product of products) {
+  //   await prisma.barang.create({
+  //     data: product,
+  //   });
+  // }
 
-  console.log("✓ Products created");
+  // console.log("✓ Products created");
 
   console.log("✅ Database seed completed successfully!");
 }

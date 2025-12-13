@@ -28,7 +28,11 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { TabsContent } from "@/components/ui/tabs";
-import { StyledTabs, StyledTabsList, StyledTabsTrigger } from "@/components/ui/styled-tabs";
+import {
+  StyledTabs,
+  StyledTabsList,
+  StyledTabsTrigger,
+} from "@/components/ui/styled-tabs";
 import {
   FileText,
   Download,
@@ -335,7 +339,9 @@ export function FinancialStatements({ className }: FinancialStatementsProps) {
 
           <StyledTabs defaultValue="balance-sheet" className="w-full">
             <StyledTabsList className="grid w-full grid-cols-2">
-              <StyledTabsTrigger value="balance-sheet">Neraca</StyledTabsTrigger>
+              <StyledTabsTrigger value="balance-sheet">
+                Neraca
+              </StyledTabsTrigger>
               <StyledTabsTrigger value="income-statement">
                 Laporan Laba Rugi
               </StyledTabsTrigger>

@@ -4,7 +4,11 @@ import { useState, useEffect, useMemo } from "react";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { TabsContent } from "@/components/ui/tabs";
-import { StyledTabs, StyledTabsList, StyledTabsTrigger } from "@/components/ui/styled-tabs";
+import {
+  StyledTabs,
+  StyledTabsList,
+  StyledTabsTrigger,
+} from "@/components/ui/styled-tabs";
 import {
   Package,
   TrendingUp,
@@ -23,79 +27,13 @@ import { DaftarBarangTab } from "./tabs/DaftarBarangTab";
 import { HistoryBarangMasukTab } from "./tabs/HistoryBarangMasukTab";
 import { HistoryBarangKeluarTab } from "./tabs/HistoryBarangKeluarTab";
 import { HistoryPenjualanTab } from "./tabs/HistoryPenjualanTab";
-
-interface Barang {
-  id: string;
-  nama: string;
-  sku?: string;
-  kategori: string;
-  stok: number;
-  stokMinimum: number;
-  hargaBeli: number;
-  hargaJual: number;
-  satuan: string;
-  deskripsi?: string;
-  lokasiId: string;
-  lokasi: {
-    id: string;
-    namaLokasi: string;
-  };
-}
-
-interface Lokasi {
-  id: string;
-  namaLokasi: string;
-  alamat?: string;
-}
-
-interface TransaksiMasuk {
-  id: string;
-  nomorTransaksi: string;
-  tanggal: string;
-  qty: number;
-  hargaBeli: number;
-  totalNilai: number;
-  sumber: string;
-  keterangan?: string;
-  barang: Barang;
-  lokasi: Lokasi;
-}
-
-interface TransaksiKeluar {
-  id: string;
-  nomorTransaksi: string;
-  tanggal: string;
-  qty: number;
-  hargaBarang: number;
-  totalNilai: number;
-  tujuan: string;
-  keterangan?: string;
-  barang: Barang;
-  lokasi: Lokasi;
-}
-
-interface ItemTransaksiKasir {
-  id: string;
-  namaBarang: string;
-  qty: number;
-  hargaSatuan: number;
-  subtotal: number;
-  barang: Barang;
-}
-
-interface TransaksiKasir {
-  id: string;
-  nomorTransaksi: string;
-  tanggal: string;
-  total: number;
-  metodePembayaran: string;
-  kasir: {
-    id: string;
-    nama: string;
-    username: string;
-  };
-  itemTransaksi: ItemTransaksiKasir[];
-}
+import {
+  Barang,
+  Lokasi,
+  TransaksiMasuk,
+  TransaksiKeluar,
+  TransaksiKasir,
+} from "./types";
 
 export default function InventarisPage() {
   const [barang, setBarang] = useState<Barang[]>([]);
@@ -533,13 +471,14 @@ export default function InventarisPage() {
       if (lokasiFilter && lokasiFilter !== "ALL")
         params.append("lokasiId", lokasiFilter);
 
-      const [barangRes, lokasiRes, masukRes, keluarRes, kasirRes] = await Promise.all([
-        fetch(`/api/barang?${params}`),
-        fetch("/api/lokasi"),
-        fetch("/api/transaksi-masuk"),
-        fetch("/api/transaksi-keluar"),
-        fetch("/api/transaksi-kasir"),
-      ]);
+      const [barangRes, lokasiRes, masukRes, keluarRes, kasirRes] =
+        await Promise.all([
+          fetch(`/api/barang?${params}`),
+          fetch("/api/lokasi"),
+          fetch("/api/transaksi-masuk"),
+          fetch("/api/transaksi-keluar"),
+          fetch("/api/transaksi-kasir"),
+        ]);
 
       const barangData = await barangRes.json();
       const lokasiData = await lokasiRes.json();

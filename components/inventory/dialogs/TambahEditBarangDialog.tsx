@@ -86,9 +86,7 @@ export function TambahEditBarangDialog({
   const [customSumber, setCustomSumber] = useState("");
 
   // Daftar sumber barang default
-  const sumberBarangList = [
-    "Sales muffin",
-  ];
+  const sumberBarangList = ["Sales muffin"];
 
   const handleCreateLokasi = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -147,9 +147,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate return amounts
+    // Calculate return amounts and validate
     let totalRevenue = 0;
     let totalCOGS = 0;
+
+    // Find previous returns for this transaction to prevent over-returning
+    // We look for transactions with "RETUR [NomorTransaksi]" in the notes
+    const previousReturns = await prisma.transaksiKasir.findMany({
+      where: {
+        catatan: {
+          contains: `RETUR ${originalTransaksi.nomorTransaksi}`,
+        },
+      },
+      include: {
+        itemTransaksi: true,
+      },
+    });
 
     for (const returnItem of validatedData.items) {
       const originalItem = originalTransaksi.itemTransaksi.find(
@@ -165,10 +178,21 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (originalItem.qty < returnItem.qty) {
+      // Calculate already returned quantity
+      let alreadyReturnedQty = 0;
+      for (const prevRetur of previousReturns) {
+        const prevItem = prevRetur.itemTransaksi.find(
+          (item) => item.barangId === returnItem.barangId,
+        );
+        if (prevItem) {
+          alreadyReturnedQty += Math.abs(prevItem.qty);
+        }
+      }
+
+      if (alreadyReturnedQty + returnItem.qty > originalItem.qty) {
         return NextResponse.json(
           {
-            error: `Jumlah retur barang ${originalItem.namaBarang} (${returnItem.qty}) melebihi jumlah penjualan (${originalItem.qty})`,
+            error: `Jumlah retur barang ${originalItem.namaBarang} (${returnItem.qty}) melebihi sisa yang bisa diretur (Sisa: ${originalItem.qty - alreadyReturnedQty})`,
           },
           { status: 400 },
         );
@@ -192,7 +216,8 @@ export async function POST(request: NextRequest) {
           jumlahBayar: 0,
           kembalian: 0,
           kasirId: session.user.id,
-          catatan: `RETUR - ${validatedData.alasan}${validatedData.catatan ? ` - ${validatedData.catatan}` : ""}`,
+          // Include original transaction number for tracking
+          catatan: `RETUR ${originalTransaksi.nomorTransaksi} - ${validatedData.alasan}${validatedData.catatan ? ` - ${validatedData.catatan}` : ""}`,
         },
       });
 
@@ -236,23 +261,31 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Create accounting journal entry (critical for balance)
+      // Now inside the transaction!
+      await createJournalEntryForSalesReturn(
+        returnTransaksi.nomorTransaksi,
+        totalRevenue,
+        totalCOGS,
+        originalTransaksi.metodePembayaran,
+        session.user.id,
+        tx, // Pass transaction client
+      );
+
       return returnTransaksi;
     });
-
-    // Create accounting journal entry (critical for balance)
-    await createJournalEntryForSalesReturn(
-      retur.nomorTransaksi,
-      totalRevenue,
-      totalCOGS,
-      originalTransaksi.metodePembayaran,
-      session.user.id,
-    );
 
     // Fetch complete return transaction data
     const completeRetur = await prisma.transaksiKasir.findUnique({
       where: { id: retur.id },
       include: {
-        kasir: true,
+        kasir: {
+          select: {
+            id: true,
+            nama: true,
+            username: true,
+          },
+        },
         itemTransaksi: {
           include: {
             barang: true,

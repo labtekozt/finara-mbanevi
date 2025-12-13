@@ -229,9 +229,10 @@ export default function DetailPage() {
             <CardContent>
               <div className="text-2xl font-bold">
                 Rp{" "}
-                {(isHutang(data) ? data.totalHutang : data.totalPiutang).toLocaleString(
-                  "id-ID"
-                )}
+                {(isHutang(data)
+                  ? data.totalHutang
+                  : data.totalPiutang
+                ).toLocaleString("id-ID")}
               </div>
             </CardContent>
           </Card>
@@ -258,9 +259,10 @@ export default function DetailPage() {
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
                 Rp{" "}
-                {(isHutang(data) ? data.sisaHutang : data.sisaPiutang).toLocaleString(
-                  "id-ID"
-                )}
+                {(isHutang(data)
+                  ? data.sisaHutang
+                  : data.sisaPiutang
+                ).toLocaleString("id-ID")}
               </div>
             </CardContent>
           </Card>
@@ -301,10 +303,10 @@ export default function DetailPage() {
                 <p className="text-lg font-semibold">
                   {format(
                     new Date(
-                      isHutang(data) ? data.tanggalHutang : data.tanggalPiutang
+                      isHutang(data) ? data.tanggalHutang : data.tanggalPiutang,
                     ),
                     "dd MMMM yyyy",
-                    { locale: idLocale }
+                    { locale: idLocale },
                   )}
                 </p>
               </div>
@@ -353,11 +355,9 @@ export default function DetailPage() {
                     Jatuh Tempo
                   </p>
                   <p className="text-lg font-semibold">
-                    {format(
-                      new Date(data.jatuhTempo),
-                      "dd MMMM yyyy",
-                      { locale: idLocale }
-                    )}
+                    {format(new Date(data.jatuhTempo), "dd MMMM yyyy", {
+                      locale: idLocale,
+                    })}
                   </p>
                 </div>
               )}
@@ -369,15 +369,27 @@ export default function DetailPage() {
                 {isPiutang(data) && data.transaksiKasir?.itemTransaksi ? (
                   <div className="mt-2 space-y-2">
                     {data.transaksiKasir.itemTransaksi.map((item, index) => (
-                      <div key={item.id} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                      <div
+                        key={item.id}
+                        className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg"
+                      >
                         <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-sm font-medium">
                           {index + 1}
                         </span>
                         <div className="flex-1">
-                          <p className="font-semibold text-base">{item.namaBarang}</p>
+                          <p className="font-semibold text-base">
+                            {item.namaBarang}
+                          </p>
                           <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                            <span>Qty: <span className="font-medium text-foreground">{item.qty}</span></span>
-                            <span>@Rp {item.hargaSatuan.toLocaleString("id-ID")}</span>
+                            <span>
+                              Qty:{" "}
+                              <span className="font-medium text-foreground">
+                                {item.qty}
+                              </span>
+                            </span>
+                            <span>
+                              @Rp {item.hargaSatuan.toLocaleString("id-ID")}
+                            </span>
                             <span className="ml-auto font-semibold text-foreground">
                               Rp {item.subtotal.toLocaleString("id-ID")}
                             </span>
@@ -408,7 +420,8 @@ export default function DetailPage() {
           <CardHeader>
             <CardTitle>Riwayat Pembayaran</CardTitle>
             <CardDescription>
-              Detail cicilan pembayaran {type === "hutang" ? "hutang" : "piutang"}
+              Detail cicilan pembayaran{" "}
+              {type === "hutang" ? "hutang" : "piutang"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -440,7 +453,7 @@ export default function DetailPage() {
                           {format(
                             new Date(payment.tanggalBayar),
                             "dd MMM yyyy HH:mm",
-                            { locale: idLocale }
+                            { locale: idLocale },
                           )}
                         </TableCell>
                         <TableCell className="font-semibold">
@@ -470,7 +483,9 @@ export default function DetailPage() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-sm font-medium">Sisa yang Harus Dibayar:</span>
+                    <span className="text-sm font-medium">
+                      Sisa yang Harus Dibayar:
+                    </span>
                     <span className="text-lg font-bold text-red-600">
                       Rp{" "}
                       {(isHutang(data)

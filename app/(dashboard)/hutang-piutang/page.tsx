@@ -42,7 +42,13 @@ import {
   StyledTabsTrigger,
 } from "@/components/ui/styled-tabs";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, TrendingUp, TrendingDown, Wallet, Eye } from "lucide-react";
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  Eye,
+} from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
@@ -195,14 +201,11 @@ export default function HutangPiutangPage() {
 
     try {
       setLoading(true);
-      const response = await fetch(
-        `/api/piutang/${selectedPiutang.id}/bayar`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formBayarPiutang),
-        }
-      );
+      const response = await fetch(`/api/piutang/${selectedPiutang.id}/bayar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formBayarPiutang),
+      });
 
       if (!response.ok) {
         const error = await response.json();
@@ -348,7 +351,9 @@ export default function HutangPiutangPage() {
                           <TableRow key={h.id}>
                             <TableCell className="font-medium">
                               <button
-                                onClick={() => router.push(`/hutang-piutang/${h.id}`)}
+                                onClick={() =>
+                                  router.push(`/hutang-piutang/${h.id}`)
+                                }
                                 className="text-blue-600 hover:underline flex items-center gap-1"
                               >
                                 {h.nomorHutang}
@@ -356,10 +361,7 @@ export default function HutangPiutangPage() {
                               </button>
                             </TableCell>
                             <TableCell>
-                              {format(
-                                new Date(h.tanggalHutang),
-                                "dd/MM/yyyy"
-                              )}
+                              {format(new Date(h.tanggalHutang), "dd/MM/yyyy")}
                             </TableCell>
                             <TableCell>{h.sumberHutang}</TableCell>
                             <TableCell className="max-w-xs truncate">
@@ -382,9 +384,7 @@ export default function HutangPiutangPage() {
                                     : "destructive"
                                 }
                               >
-                                {h.status === "LUNAS"
-                                  ? "Lunas"
-                                  : "Belum Lunas"}
+                                {h.status === "LUNAS" ? "Lunas" : "Belum Lunas"}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -445,7 +445,9 @@ export default function HutangPiutangPage() {
                           <TableRow key={p.id}>
                             <TableCell className="font-medium">
                               <button
-                                onClick={() => router.push(`/hutang-piutang/${p.id}`)}
+                                onClick={() =>
+                                  router.push(`/hutang-piutang/${p.id}`)
+                                }
                                 className="text-blue-600 hover:underline flex items-center gap-1"
                               >
                                 {p.nomorPiutang}
@@ -453,10 +455,7 @@ export default function HutangPiutangPage() {
                               </button>
                             </TableCell>
                             <TableCell>
-                              {format(
-                                new Date(p.tanggalPiutang),
-                                "dd/MM/yyyy"
-                              )}
+                              {format(new Date(p.tanggalPiutang), "dd/MM/yyyy")}
                             </TableCell>
                             <TableCell>{p.namaPelanggan}</TableCell>
                             <TableCell>
@@ -487,9 +486,7 @@ export default function HutangPiutangPage() {
                                     : "destructive"
                                 }
                               >
-                                {p.status === "LUNAS"
-                                  ? "Lunas"
-                                  : "Belum Lunas"}
+                                {p.status === "LUNAS" ? "Lunas" : "Belum Lunas"}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -565,7 +562,9 @@ export default function HutangPiutangPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="metode-pembayaran-hutang">Metode Pembayaran *</Label>
+                <Label htmlFor="metode-pembayaran-hutang">
+                  Metode Pembayaran *
+                </Label>
                 <Select
                   value={formBayarHutang.metodePembayaran}
                   onValueChange={(value) =>
@@ -668,7 +667,9 @@ export default function HutangPiutangPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="metode-pembayaran-piutang">Metode Pembayaran *</Label>
+                <Label htmlFor="metode-pembayaran-piutang">
+                  Metode Pembayaran *
+                </Label>
                 <Select
                   value={formBayarPiutang.metodePembayaran}
                   onValueChange={(value) =>
