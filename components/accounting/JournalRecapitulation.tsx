@@ -204,11 +204,11 @@ export function JournalRecapitulation({
       // Individual journal entries table
       const entriesTableData = monthEntries.map((entry) => {
         const totalDebit = entry.details.reduce(
-          (sum, detail) => sum + detail.debit,
+          (sum, detail) => sum + Number(detail.debit),
           0,
         );
         const totalKredit = entry.details.reduce(
-          (sum, detail) => sum + detail.kredit,
+          (sum, detail) => sum + Number(detail.kredit),
           0,
         );
         const isBalanced = totalDebit === totalKredit;
@@ -460,11 +460,11 @@ export function JournalRecapitulation({
       // Individual journal entries table
       const entriesTableData = dayEntries.map((entry: JurnalEntry) => {
         const totalDebit = entry.details.reduce(
-          (sum: number, detail) => sum + detail.debit,
+          (sum: number, detail) => sum + Number(detail.debit),
           0,
         );
         const totalKredit = entry.details.reduce(
-          (sum: number, detail) => sum + detail.kredit,
+          (sum: number, detail) => sum + Number(detail.kredit),
           0,
         );
 
@@ -604,11 +604,11 @@ export function JournalRecapitulation({
 
       const monthData = monthlyData[monthStr];
       monthData.totalDebit += entry.details.reduce(
-        (sum, detail) => sum + detail.debit,
+        (sum, detail) => sum + Number(detail.debit),
         0,
       );
       monthData.totalKredit += entry.details.reduce(
-        (sum, detail) => sum + detail.kredit,
+        (sum, detail) => sum + Number(detail.kredit),
         0,
       );
       monthData.transactionCount += 1;
@@ -956,12 +956,12 @@ export function JournalRecapitulation({
                                   (entry: JurnalEntry) => {
                                     const totalDebit = entry.details.reduce(
                                       (sum: number, detail) =>
-                                        sum + detail.debit,
+                                        sum + Number(detail.debit),
                                       0,
                                     );
                                     const totalKredit = entry.details.reduce(
                                       (sum: number, detail) =>
-                                        sum + detail.kredit,
+                                        sum + Number(detail.kredit),
                                       0,
                                     );
                                     const isBalanced =
@@ -1053,11 +1053,12 @@ export function JournalRecapitulation({
                                 );
                                 return dayEntries.map((entry) => {
                                   const totalDebit = entry.details.reduce(
-                                    (sum, detail) => sum + detail.debit,
+                                    (sum, detail) => sum + Number(detail.debit),
                                     0,
                                   );
                                   const totalKredit = entry.details.reduce(
-                                    (sum, detail) => sum + detail.kredit,
+                                    (sum, detail) =>
+                                      sum + Number(detail.kredit),
                                     0,
                                   );
                                   const isBalanced = totalDebit === totalKredit;

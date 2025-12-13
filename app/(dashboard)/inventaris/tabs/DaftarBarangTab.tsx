@@ -23,14 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Package,
-  AlertTriangle,
-} from "lucide-react";
+import { Plus, Search, Edit, Package, AlertTriangle } from "lucide-react";
 import { StatsGrid } from "@/components/inventory";
 import { Barang, Lokasi } from "../types";
 import { ReactNode } from "react";
@@ -60,7 +53,6 @@ interface DaftarBarangTabProps {
   // Actions
   openTambahDialog: () => void;
   openEditDialog: (item: Barang) => void;
-  handleDelete: (id: string) => void;
 
   // Pagination
   currentPage: number;
@@ -91,7 +83,6 @@ export function DaftarBarangTab({
   getSortIcon,
   openTambahDialog,
   openEditDialog,
-  handleDelete,
   currentPage,
   totalPages,
   setCurrentPage,
@@ -325,13 +316,6 @@ export function DaftarBarangTab({
                           onClick={() => openEditDialog(item)}
                         >
                           <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
                       </div>
                     </TableCell>

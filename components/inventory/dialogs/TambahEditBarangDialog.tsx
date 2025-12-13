@@ -37,6 +37,9 @@ interface TambahEditBarangDialogProps {
     satuan: string;
     deskripsi: string;
     lokasiId: string;
+    paymentMethod?: "CASH" | "CREDIT";
+    supplier?: string;
+    dueDate?: string;
   };
   setFormData: (data: any) => void;
   formTambahStok: {
@@ -48,6 +51,7 @@ interface TambahEditBarangDialogProps {
     keterangan: string;
     reason: "PURCHASE" | "STOCK_OPNAME_SURPLUS" | "INTERNAL_ADJUSTMENT";
     paymentMethod?: "CASH" | "CREDIT";
+    dueDate?: string;
   };
   setFormTambahStok: (data: any) => void;
   barang: Barang[];
@@ -350,6 +354,25 @@ export function TambahEditBarangDialog({
                   </div>
                 )}
 
+                {formTambahStok.reason === "PURCHASE" &&
+                  formTambahStok.paymentMethod === "CREDIT" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="due-date-tambah">Jatuh Tempo *</Label>
+                      <Input
+                        id="due-date-tambah"
+                        type="date"
+                        value={formTambahStok.dueDate || ""}
+                        onChange={(e) =>
+                          setFormTambahStok({
+                            ...formTambahStok,
+                            dueDate: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                  )}
+
                 <div className="space-y-2">
                   <Label htmlFor="lokasi-tambah">Lokasi Gudang *</Label>
                   <div className="flex gap-2">
@@ -476,7 +499,9 @@ export function TambahEditBarangDialog({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="stok">Stok Awal *</Label>
+                    <Label htmlFor="stok">
+                      {editingItem ? "Stok (Hanya Tambah)" : "Stok Awal *"}
+                    </Label>
                     <Input
                       id="stok"
                       type="number"
@@ -488,8 +513,14 @@ export function TambahEditBarangDialog({
                         })
                       }
                       required
-                      min="0"
+                      min={editingItem ? editingItem.stok : 0}
                     />
+                    {editingItem && (
+                      <p className="text-[10px] text-muted-foreground">
+                        Stok saat ini: {editingItem.stok}. Hanya bisa menambah
+                        stok.
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="stokMinimum">Stok Minimum *</Label>
@@ -543,6 +574,85 @@ export function TambahEditBarangDialog({
                     />
                   </div>
                 </div>
+
+                {/* Purchase Details for New Item with Stock OR Stock Increase during Edit */}
+                {((!editingItem && formData.stok > 0) ||
+                  (editingItem && formData.stok > (editingItem.stok || 0))) && (
+                  <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
+                    <h4 className="font-medium text-sm">
+                      {editingItem
+                        ? "Detail Penambahan Stok"
+                        : "Detail Pembelian Awal"}
+                    </h4>
+                    <div className="space-y-2">
+                      <Label htmlFor="supplier">
+                        Pemasok / Sumber Barang *
+                      </Label>
+                      <Input
+                        id="supplier"
+                        value={formData.supplier || ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, supplier: e.target.value })
+                        }
+                        placeholder="Nama pemasok atau sumber barang"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="paymentMethod">
+                          Metode Pembayaran *
+                        </Label>
+                        <Select
+                          value={formData.paymentMethod || "CASH"}
+                          onValueChange={(value: "CASH" | "CREDIT") =>
+                            setFormData({ ...formData, paymentMethod: value })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih metode" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="CASH">Tunai</SelectItem>
+                            <SelectItem value="CREDIT">
+                              Kredit / Hutang
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {formData.paymentMethod === "CREDIT" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="dueDate">Jatuh Tempo *</Label>
+                          <Input
+                            id="dueDate"
+                            type="date"
+                            value={formData.dueDate || ""}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                dueDate: e.target.value,
+                              })
+                            }
+                            required
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-sm text-muted-foreground">
+                      Total {editingItem ? "Penambahan" : "Pembelian"}:{" "}
+                      <span className="font-bold text-foreground">
+                        Rp{" "}
+                        {(
+                          (formData.stok - (editingItem?.stok || 0)) *
+                          formData.hargaBeli
+                        ).toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="lokasiId">Lokasi *</Label>

@@ -27,6 +27,14 @@ export async function POST(
       );
     }
 
+    const MAX_DECIMAL = 9999999999999.99;
+    if (jumlahBayar > MAX_DECIMAL) {
+      return NextResponse.json(
+        { error: "Jumlah bayar terlalu besar" },
+        { status: 400 },
+      );
+    }
+
     // Create payment and update hutang
     const result = await prisma.$transaction(async (tx: any) => {
       // Get hutang data inside transaction to prevent race conditions

@@ -1051,17 +1051,23 @@ export async function createJournalEntryForStockAdjustment(
   adjustmentAmount: number, // Positive = increase, Negative = decrease
   isIncrease: boolean,
   userId: string,
+  tx?: Prisma.TransactionClient,
 ) {
-  const periode = await getActiveAccountingPeriod(undefined, userId);
+  const client = tx || prisma;
+  const periode = await getActiveAccountingPeriod(client, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
 
-  const inventoryAccount = await getAccountByCode(ACCOUNT_CODES.INVENTORY);
+  const inventoryAccount = await getAccountByCode(
+    ACCOUNT_CODES.INVENTORY,
+    client,
+  );
   const otherExpenseAccount = await getAccountByCode(
     ACCOUNT_CODES.OTHER_EXPENSE,
+    client,
   );
-  const otherRevenueAccount = await getAccountByCode("4002"); // Other Revenue
+  const otherRevenueAccount = await getAccountByCode("4002", client); // Other Revenue
 
   if (!inventoryAccount || !otherExpenseAccount || !otherRevenueAccount) {
     throw new Error(
@@ -1072,7 +1078,7 @@ export async function createJournalEntryForStockAdjustment(
   const nomorJurnal = generateTransactionNumber("JR");
   const absAmount = Math.abs(adjustmentAmount);
 
-  const jurnalEntry = await prisma.jurnalEntry.create({
+  const jurnalEntry = await client.jurnalEntry.create({
     data: {
       nomorJurnal,
       tanggal: new Date(),

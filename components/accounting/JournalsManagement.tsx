@@ -243,11 +243,11 @@ export function JournalsManagement({
                   <TableBody>
                     {entries.map((entry) => {
                       const totalDebit = entry.details.reduce(
-                        (sum, detail) => sum + detail.debit,
+                        (sum, detail) => sum + Number(detail.debit),
                         0,
                       );
                       const totalKredit = entry.details.reduce(
-                        (sum, detail) => sum + detail.kredit,
+                        (sum, detail) => sum + Number(detail.kredit),
                         0,
                       );
                       return (

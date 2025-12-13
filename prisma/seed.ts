@@ -70,15 +70,15 @@ async function main() {
   // console.log("✓ Locations created");
 
   // Create accounting period
-    // console.log("Creating accounting period...");
-    // const periodeAkuntansi = await prisma.periodeAkuntansi.create({
-    //   data: {
-    //     nama: "2025 - Tahun Berjalan",
-    //     tanggalMulai: new Date("2025-01-01"),
-    //     tanggalAkhir: new Date("2025-12-31"),
-    //     isActive: true,
-    //   },
-    // });
+  // console.log("Creating accounting period...");
+  // const periodeAkuntansi = await prisma.periodeAkuntansi.create({
+  //   data: {
+  //     nama: "2025 - Tahun Berjalan",
+  //     tanggalMulai: new Date("2025-01-01"),
+  //     tanggalAkhir: new Date("2025-12-31"),
+  //     isActive: true,
+  //   },
+  // });
 
   // console.log("✓ Accounting period created");
 

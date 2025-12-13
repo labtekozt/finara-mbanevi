@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
-import { createJournalEntryForStockAdjustment } from "@/lib/accounting-utils";
+import {
+  createJournalEntryForStockAdjustment,
+  createJournalEntryForStockAddition,
+} from "@/lib/accounting-utils";
 import { z } from "zod";
 import { serializeDecimal } from "@/lib/utils";
 import logger from "@/lib/logger";
+import { generateMasukNumber } from "@/lib/transaction-number";
 
 const barangSchema = z.object({
   nama: z.string().min(1, "Nama barang harus diisi"),
@@ -18,6 +22,10 @@ const barangSchema = z.object({
   satuan: z.string().min(1, "Satuan harus diisi"),
   deskripsi: z.string().optional(),
   lokasiId: z.string().min(1, "Lokasi harus dipilih"),
+  // Optional fields for stock addition during edit
+  paymentMethod: z.enum(["CASH", "CREDIT"]).optional(),
+  supplier: z.string().optional(),
+  dueDate: z.string().optional(),
 });
 
 // GET - Get single item
@@ -68,6 +76,18 @@ export async function PUT(
     const body = await request.json();
     const validatedData = barangSchema.parse(body);
 
+    // Validate numeric limits for Decimal(15, 2)
+    const MAX_DECIMAL = 9999999999999.99;
+    if (
+      validatedData.hargaBeli > MAX_DECIMAL ||
+      validatedData.hargaJual > MAX_DECIMAL
+    ) {
+      return NextResponse.json(
+        { error: "Harga terlalu besar (maksimum 9.999.999.999.999,99)" },
+        { status: 400 },
+      );
+    }
+
     // Get current item to check for stock changes
     const currentBarang = await prisma.barang.findUnique({
       where: { id },
@@ -77,54 +97,123 @@ export async function PUT(
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
 
-    const barang = await prisma.barang.update({
-      where: { id },
-      data: validatedData,
-      include: {
-        lokasi: true,
-      },
-    });
+    // Use transaction for atomicity
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Update Barang
+      // We need to exclude the optional fields that are not part of Barang model
+      const { paymentMethod, supplier, dueDate, ...barangData } = validatedData;
 
-    // Check for stock adjustment and create journal entry if needed
-    const stockDifference = validatedData.stok - currentBarang.stok;
-    if (stockDifference !== 0) {
-      try {
-        const adjustmentAmount =
-          Math.abs(stockDifference) * currentBarang.hargaBeli.toNumber();
-        const isIncrease = stockDifference > 0;
+      const barang = await tx.barang.update({
+        where: { id },
+        data: barangData,
+        include: {
+          lokasi: true,
+        },
+      });
 
-        await createJournalEntryForStockAdjustment(
-          `ADJ-${barang.id}-${Date.now()}`,
-          adjustmentAmount,
-          isIncrease,
-          session.user.id,
-        );
+      // 2. Check for stock adjustment
+      const stockDifference = validatedData.stok - currentBarang.stok;
 
-        logger.info(
-          `Stock adjustment journal created for ${barang.nama}: ${stockDifference > 0 ? "+" : ""}${stockDifference} units`,
+      // Prevent stock decrease via Edit Item endpoint
+      if (stockDifference < 0) {
+        throw new Error(
+          "Stok tidak dapat dikurangi melalui menu Edit Barang. Gunakan Transaksi Keluar atau Stock Opname.",
         );
-      } catch (journalError) {
-        logger.error(
-          "Failed to create stock adjustment journal:",
-          journalError,
-        );
-        // Don't fail the update if journal creation fails
       }
-    }
 
-    // Log activity
-    await prisma.activityLog.create({
-      data: {
-        userId: session.user.id,
-        userName: session.user.name || "",
-        action: "UPDATE",
-        entity: "Barang",
-        entityId: barang.id,
-        description: `Mengupdate barang: ${barang.nama}${stockDifference !== 0 ? ` (stok: ${currentBarang.stok} → ${validatedData.stok})` : ""}`,
-      },
+      if (stockDifference > 0) {
+        try {
+          const adjustmentAmount =
+            stockDifference * currentBarang.hargaBeli.toNumber();
+          const isIncrease = true;
+
+          // Case A: Stock Increase with Payment Method (Purchase)
+          if (paymentMethod) {
+            const totalNilai = adjustmentAmount;
+            const reason = "PURCHASE";
+
+            // Create TransaksiMasuk
+            const transaksiMasuk = await tx.transaksiMasuk.create({
+              data: {
+                nomorTransaksi: generateMasukNumber(),
+                barangId: barang.id,
+                qty: stockDifference,
+                hargaBeli: barang.hargaBeli,
+                totalNilai: totalNilai,
+                sumber: supplier || "Stock Update",
+                lokasiId: barang.lokasiId,
+                keterangan: "Penambahan stok via Edit Barang",
+                tanggal: new Date(),
+              },
+            });
+
+            // Create Hutang if Credit
+            if (paymentMethod === "CREDIT") {
+              const nomorHutang = `HTG-${Date.now()}`;
+              await tx.hutang.create({
+                data: {
+                  nomorHutang,
+                  transaksiMasukId: transaksiMasuk.id,
+                  sumberHutang: supplier || "Unknown",
+                  deskripsi: `Pembelian (Edit) ${barang.nama}`,
+                  totalHutang: totalNilai,
+                  totalBayar: 0,
+                  sisaHutang: totalNilai,
+                  status: "BELUM_LUNAS",
+                  jatuhTempo: dueDate ? new Date(dueDate) : null,
+                },
+              });
+            }
+
+            // Journal
+            await createJournalEntryForStockAddition(
+              transaksiMasuk.id,
+              totalNilai,
+              reason,
+              session.user.id,
+              paymentMethod,
+              tx,
+            );
+          } else {
+            // Case B: Generic Adjustment (Increase without payment info)
+            // This happens if user just increases the number without filling purchase details (should be prevented by UI validation ideally)
+            await createJournalEntryForStockAdjustment(
+              `ADJ-${barang.id}-${Date.now()}`,
+              adjustmentAmount,
+              isIncrease,
+              session.user.id,
+              tx,
+            );
+          }
+
+          logger.info(
+            `Stock adjustment journal created for ${barang.nama}: +${stockDifference} units`,
+          );
+        } catch (journalError) {
+          logger.error(
+            "Failed to create stock adjustment journal:",
+            journalError,
+          );
+          throw journalError;
+        }
+      }
+
+      // Log activity
+      await tx.activityLog.create({
+        data: {
+          userId: session.user.id,
+          userName: session.user.name || "",
+          action: "UPDATE",
+          entity: "Barang",
+          entityId: barang.id,
+          description: `Mengupdate barang: ${barang.nama}${stockDifference !== 0 ? ` (stok: ${currentBarang.stok} → ${validatedData.stok})` : ""}`,
+        },
+      });
+
+      return barang;
     });
 
-    return NextResponse.json(barang);
+    return NextResponse.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -134,7 +223,9 @@ export async function PUT(
     }
     logger.error("Error updating barang:", error);
     return NextResponse.json(
-      { error: "Failed to update item" },
+      {
+        error: error instanceof Error ? error.message : "Failed to update item",
+      },
       { status: 500 },
     );
   }

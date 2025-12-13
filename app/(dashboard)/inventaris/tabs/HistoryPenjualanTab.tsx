@@ -15,18 +15,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Package, TrendingDown } from "lucide-react";
+import { Search, Package, TrendingDown, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { StatsGrid } from "@/components/inventory";
 import { TransaksiKasir, ItemTransaksiKasir } from "../types";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 
 interface HistoryPenjualanTabProps {
   // Data
@@ -71,6 +72,9 @@ export function HistoryPenjualanTab({
   setCurrentPage,
   PaginationComponent,
 }: HistoryPenjualanTabProps) {
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<TransaksiKasir | null>(null);
+
   return (
     <div className="space-y-4">
       {/* Statistics Cards */}
@@ -194,12 +198,13 @@ export function HistoryPenjualanTab({
                       {getSortIconKasir("kasir")}
                     </div>
                   </TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedTransaksiKasir.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center">
+                    <TableCell colSpan={9} className="text-center">
                       {startDateKasir || endDateKasir
                         ? "Tidak ada transaksi pada rentang tanggal tersebut"
                         : "Belum ada transaksi"}
@@ -240,6 +245,15 @@ export function HistoryPenjualanTab({
                         <Badge variant="outline">{tr.metodePembayaran}</Badge>
                       </TableCell>
                       <TableCell>{tr.kasir.nama}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setSelectedTransaction(tr)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -256,6 +270,114 @@ export function HistoryPenjualanTab({
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={!!selectedTransaction}
+        onOpenChange={(open) => !open && setSelectedTransaction(null)}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Detail Transaksi</DialogTitle>
+            <DialogDescription>
+              {selectedTransaction?.nomorTransaksi}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTransaction && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Tanggal
+                  </p>
+                  <p>
+                    {format(
+                      new Date(selectedTransaction.tanggal),
+                      "dd MMMM yyyy HH:mm",
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Kasir
+                  </p>
+                  <p>{selectedTransaction.kasir.nama}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Pelanggan
+                  </p>
+                  <p>{selectedTransaction.namaPelanggan || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Status Pengambilan
+                  </p>
+                  <Badge
+                    variant={
+                      selectedTransaction.belumDiambil
+                        ? "destructive"
+                        : "default"
+                    }
+                  >
+                    {selectedTransaction.belumDiambil
+                      ? "Belum Diambil"
+                      : "Sudah Diambil"}
+                  </Badge>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="mb-2 font-medium">Item Transaksi</h4>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Barang</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Harga</TableHead>
+                        <TableHead className="text-right">Subtotal</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedTransaction.itemTransaksi.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.namaBarang}</TableCell>
+                          <TableCell className="text-right">
+                            {item.qty} {item.barang.satuan}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            Rp {item.hargaSatuan.toLocaleString("id-ID")}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            Rp {item.subtotal.toLocaleString("id-ID")}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-right font-bold">
+                          Total
+                        </TableCell>
+                        <TableCell className="text-right font-bold">
+                          Rp {selectedTransaction.total.toLocaleString("id-ID")}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {selectedTransaction.catatan && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Catatan
+                  </p>
+                  <p className="text-sm">{selectedTransaction.catatan}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

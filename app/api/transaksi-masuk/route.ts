@@ -18,6 +18,7 @@ const transaksiMasukSchema = z.object({
     required_error: "Alasan penambahan stok harus dipilih",
   }),
   paymentMethod: z.enum(["CASH", "CREDIT"]).optional(),
+  dueDate: z.string().optional(),
 });
 
 // GET - List incoming transactions
@@ -74,7 +75,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = transaksiMasukSchema.parse(body);
 
+    // Validate numeric limits
+    const MAX_DECIMAL = 9999999999999.99;
+    if (validatedData.hargaBeli > MAX_DECIMAL) {
+      return NextResponse.json(
+        { error: "Harga beli terlalu besar" },
+        { status: 400 },
+      );
+    }
+
     const totalNilai = validatedData.qty * validatedData.hargaBeli;
+    if (totalNilai > MAX_DECIMAL) {
+      return NextResponse.json(
+        { error: "Total nilai transaksi terlalu besar" },
+        { status: 400 },
+      );
+    }
 
     // Create transaction and update stock
     const transaksi = await prisma.$transaction(async (tx: any) => {
@@ -124,6 +140,9 @@ export async function POST(request: NextRequest) {
             totalBayar: 0,
             sisaHutang: totalNilai,
             status: "BELUM_LUNAS",
+            jatuhTempo: validatedData.dueDate
+              ? new Date(validatedData.dueDate)
+              : null,
           },
         });
       }

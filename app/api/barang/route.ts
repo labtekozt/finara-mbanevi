@@ -6,6 +6,10 @@ import { createJournalEntryForStockAddition } from "@/lib/accounting-utils";
 import { z } from "zod";
 import { serializeDecimal } from "@/lib/utils";
 import logger from "@/lib/logger";
+import {
+  generateTransactionNumber,
+  generateMasukNumber,
+} from "@/lib/transaction-number";
 
 const barangSchema = z.object({
   nama: z.string().min(1, "Nama barang harus diisi"),
@@ -18,6 +22,10 @@ const barangSchema = z.object({
   satuan: z.string().min(1, "Satuan harus diisi"),
   deskripsi: z.string().optional(),
   lokasiId: z.string().min(1, "Lokasi harus dipilih"),
+  // Optional fields for initial stock purchase
+  paymentMethod: z.enum(["CASH", "CREDIT"]).optional(),
+  supplier: z.string().optional(),
+  dueDate: z.string().optional(),
 });
 
 // GET - List all items with optional filters
@@ -74,37 +82,127 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = barangSchema.parse(body);
 
-    const barang = await prisma.barang.create({
-      data: validatedData,
-      include: {
-        lokasi: true,
-      },
-    });
-
-    // Log activity
-    await prisma.activityLog.create({
-      data: {
-        userId: session.user.id,
-        userName: session.user.name || "",
-        action: "CREATE",
-        entity: "Barang",
-        entityId: barang.id,
-        description: `Menambah barang baru: ${barang.nama}`,
-      },
-    });
-
-    // Create journal entry for initial inventory if stock > 0
-    if (validatedData.stok > 0) {
-      const totalNilai = validatedData.stok * validatedData.hargaBeli;
-      await createJournalEntryForStockAddition(
-        `INITIAL-${barang.id}`,
-        totalNilai,
-        "INTERNAL_ADJUSTMENT",
-        session.user.id,
+    // Validate numeric limits for Decimal(15, 2)
+    const MAX_DECIMAL = 9999999999999.99;
+    if (
+      validatedData.hargaBeli > MAX_DECIMAL ||
+      validatedData.hargaJual > MAX_DECIMAL
+    ) {
+      return NextResponse.json(
+        { error: "Harga terlalu besar (maksimum 9.999.999.999.999,99)" },
+        { status: 400 },
       );
     }
 
-    return NextResponse.json(barang, { status: 201 });
+    const totalNilai = validatedData.stok * validatedData.hargaBeli;
+    if (totalNilai > MAX_DECIMAL) {
+      return NextResponse.json(
+        {
+          error:
+            "Total nilai stok awal terlalu besar (maksimum 9.999.999.999.999,99)",
+        },
+        { status: 400 },
+      );
+    }
+
+    // Auto-generate SKU if not provided
+    let sku = validatedData.sku;
+    if (!sku || sku.trim() === "") {
+      sku = generateTransactionNumber("BRG");
+    }
+
+    // Use transaction to ensure data integrity
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Create Barang
+      const barang = await tx.barang.create({
+        data: {
+          nama: validatedData.nama,
+          sku: sku!,
+          kategori: validatedData.kategori,
+          stok: validatedData.stok,
+          stokMinimum: validatedData.stokMinimum,
+          hargaBeli: validatedData.hargaBeli,
+          hargaJual: validatedData.hargaJual,
+          satuan: validatedData.satuan,
+          deskripsi: validatedData.deskripsi,
+          lokasiId: validatedData.lokasiId,
+        },
+        include: {
+          lokasi: true,
+        },
+      });
+
+      // 2. Log activity
+      await tx.activityLog.create({
+        data: {
+          userId: session.user.id,
+          userName: session.user.name || "",
+          action: "CREATE",
+          entity: "Barang",
+          entityId: barang.id,
+          description: `Menambah barang baru: ${barang.nama}`,
+        },
+      });
+
+      // 3. Handle Initial Stock (Create TransaksiMasuk & Journal)
+      if (validatedData.stok > 0) {
+        const totalNilai = validatedData.stok * validatedData.hargaBeli;
+        const reason = validatedData.supplier
+          ? "PURCHASE"
+          : "INTERNAL_ADJUSTMENT";
+
+        // Create TransaksiMasuk record for traceability
+        const transaksiMasuk = await tx.transaksiMasuk.create({
+          data: {
+            nomorTransaksi: generateMasukNumber(),
+            barangId: barang.id,
+            qty: validatedData.stok,
+            hargaBeli: validatedData.hargaBeli,
+            totalNilai: totalNilai,
+            sumber: validatedData.supplier || "Initial Inventory",
+            lokasiId: validatedData.lokasiId,
+            keterangan: "Stok awal barang baru",
+            tanggal: new Date(),
+          },
+        });
+
+        // If Credit Purchase, create Hutang
+        if (reason === "PURCHASE" && validatedData.paymentMethod === "CREDIT") {
+          const nomorHutang = `HTG-${Date.now()}`;
+          const deskripsi = `Pembelian Awal ${barang.nama} - ${validatedData.stok} ${barang.satuan}`;
+
+          await tx.hutang.create({
+            data: {
+              nomorHutang,
+              transaksiMasukId: transaksiMasuk.id,
+              sumberHutang: validatedData.supplier!,
+              deskripsi,
+              totalHutang: totalNilai,
+              totalBayar: 0,
+              sisaHutang: totalNilai,
+              status: "BELUM_LUNAS",
+              jatuhTempo: validatedData.dueDate
+                ? new Date(validatedData.dueDate)
+                : null,
+            },
+          });
+        }
+
+        // Create Journal Entry
+        await createJournalEntryForStockAddition(
+          transaksiMasuk.id,
+          totalNilai,
+          reason,
+          session.user.id,
+          validatedData.paymentMethod,
+          tx,
+        );
+      }
+
+      return barang;
+    });
+
+    return NextResponse.json(result, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

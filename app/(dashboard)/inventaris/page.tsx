@@ -17,6 +17,8 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Clock,
+  ClipboardCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -27,6 +29,8 @@ import { DaftarBarangTab } from "./tabs/DaftarBarangTab";
 import { HistoryBarangMasukTab } from "./tabs/HistoryBarangMasukTab";
 import { HistoryBarangKeluarTab } from "./tabs/HistoryBarangKeluarTab";
 import { HistoryPenjualanTab } from "./tabs/HistoryPenjualanTab";
+import { BarangBelumDiambilTab } from "./tabs/BarangBelumDiambilTab";
+import { StockOpnameTab } from "./tabs/StockOpnameTab";
 import {
   Barang,
   Lokasi,
@@ -90,6 +94,10 @@ export default function InventarisPage() {
     satuan: "pcs",
     deskripsi: "",
     lokasiId: "",
+    // New fields for initial stock purchase
+    paymentMethod: "CASH" as "CASH" | "CREDIT",
+    supplier: "",
+    dueDate: "",
   });
 
   // Form untuk tambah stok barang existing
@@ -105,6 +113,7 @@ export default function InventarisPage() {
       | "STOCK_OPNAME_SURPLUS"
       | "INTERNAL_ADJUSTMENT",
     paymentMethod: "CREDIT" as "CASH" | "CREDIT" | undefined,
+    dueDate: "",
   });
 
   // Form untuk barang keluar
@@ -550,6 +559,11 @@ export default function InventarisPage() {
             formTambahStok.reason === "PURCHASE"
               ? formTambahStok.paymentMethod
               : undefined,
+          dueDate:
+            formTambahStok.reason === "PURCHASE" &&
+            formTambahStok.paymentMethod === "CREDIT"
+              ? formTambahStok.dueDate
+              : undefined,
         };
 
         const response = await fetch("/api/transaksi-masuk", {
@@ -603,35 +617,6 @@ export default function InventarisPage() {
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Yakin ingin menghapus barang ini?")) return;
-
-    try {
-      const response = await fetch(`/api/barang/${id}`, {
-        method: "DELETE",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Jika barang sudah digunakan dalam transaksi
-        if (response.status === 400 && data.message) {
-          toast.error(data.message, {
-            duration: 5000, // Tampil lebih lama karena pesan panjang
-          });
-        } else {
-          toast.error(data.error || "Gagal menghapus barang");
-        }
-        return;
-      }
-
-      toast.success("Barang berhasil dihapus");
-      fetchData();
-    } catch (error: any) {
-      toast.error(error.message || "Terjadi kesalahan");
-    }
-  }
-
   function openEditDialog(item: Barang) {
     setEditingItem(item);
     setTambahMode("new"); // Tidak digunakan saat edit
@@ -646,6 +631,9 @@ export default function InventarisPage() {
       satuan: item.satuan,
       deskripsi: item.deskripsi || "",
       lokasiId: item.lokasiId,
+      paymentMethod: "CASH",
+      supplier: "",
+      dueDate: "",
     });
     setDialogOpen(true);
   }
@@ -670,6 +658,9 @@ export default function InventarisPage() {
       satuan: "pcs",
       deskripsi: "",
       lokasiId: "",
+      paymentMethod: "CASH",
+      supplier: "",
+      dueDate: "",
     });
     setFormTambahStok({
       barangId: "",
@@ -680,6 +671,7 @@ export default function InventarisPage() {
       keterangan: "",
       reason: "PURCHASE",
       paymentMethod: "CASH",
+      dueDate: "",
     });
   }
 
@@ -705,6 +697,7 @@ export default function InventarisPage() {
       // Reset reason and payment method when changing item
       reason: "PURCHASE",
       paymentMethod: "CASH",
+      dueDate: "",
     });
   }
 
@@ -723,6 +716,7 @@ export default function InventarisPage() {
         keterangan: "",
         reason: "PURCHASE",
         paymentMethod: "CASH",
+        dueDate: "",
       });
       // reset formData untuk input barang baru
       setFormData({
@@ -736,6 +730,9 @@ export default function InventarisPage() {
         satuan: "pcs",
         deskripsi: "",
         lokasiId: "",
+        paymentMethod: "CASH",
+        supplier: "",
+        dueDate: "",
       });
     } else {
       // pilih barang existing
@@ -854,6 +851,10 @@ export default function InventarisPage() {
               <Package className="mr-2 h-4 w-4" />
               Daftar Barang
             </StyledTabsTrigger>
+            <StyledTabsTrigger value="opname">
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+              Stock Opname
+            </StyledTabsTrigger>
             <StyledTabsTrigger value="masuk">
               <TrendingUp className="mr-2 h-4 w-4" />
               History Barang Masuk
@@ -865,6 +866,10 @@ export default function InventarisPage() {
             <StyledTabsTrigger value="kasir">
               <TrendingDown className="mr-2 h-4 w-4" />
               History Penjualan Barang
+            </StyledTabsTrigger>
+            <StyledTabsTrigger value="belum-diambil">
+              <Clock className="mr-2 h-4 w-4" />
+              Barang Belum Diambil
             </StyledTabsTrigger>
           </StyledTabsList>
           {/* Tab Daftar Barang */}
@@ -887,11 +892,28 @@ export default function InventarisPage() {
               getSortIcon={getSortIcon}
               openTambahDialog={openTambahDialog}
               openEditDialog={openEditDialog}
-              handleDelete={handleDelete}
               currentPage={currentPageBarang}
               totalPages={totalPagesBarang}
               setCurrentPage={setCurrentPageBarang}
               PaginationComponent={Pagination}
+            />
+          </TabsContent>
+
+          {/* Tab Stock Opname */}
+          <TabsContent value="opname">
+            <StockOpnameTab
+              originalBarang={barang}
+              paginatedBarang={paginatedBarang}
+              loading={loading}
+              search={search}
+              setSearch={setSearch}
+              handleSort={handleSort}
+              getSortIcon={getSortIcon}
+              currentPage={currentPageBarang}
+              totalPages={totalPagesBarang}
+              setCurrentPage={setCurrentPageBarang}
+              PaginationComponent={Pagination}
+              onRefresh={fetchData}
             />
           </TabsContent>
 
@@ -949,6 +971,13 @@ export default function InventarisPage() {
               totalPages={totalPagesKasir}
               setCurrentPage={setCurrentPageKasir}
               PaginationComponent={Pagination}
+            />
+          </TabsContent>
+
+          <TabsContent value="belum-diambil">
+            <BarangBelumDiambilTab
+              transaksiKasir={transaksiKasir}
+              onStatusChange={fetchData}
             />
           </TabsContent>
         </StyledTabs>

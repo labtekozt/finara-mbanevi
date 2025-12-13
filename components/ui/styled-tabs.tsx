@@ -51,7 +51,7 @@ const StyledTabsList = React.forwardRef<HTMLDivElement, StyledTabsListProps>(
     <TabsList
       ref={ref}
       className={cn(
-        "bg-blue-50 p-2 rounded-lg border border-blue-200 shadow-sm h-auto gap-2",
+        "bg-blue-50 p-2 rounded-lg border border-blue-200 shadow-sm h-auto gap-2 w-full flex justify-start overflow-x-auto",
         className,
       )}
       {...props}

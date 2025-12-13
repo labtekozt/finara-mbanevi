@@ -66,6 +66,11 @@ export interface TransaksiKasir {
   tanggal: string;
   total: number;
   metodePembayaran: string;
+  belumDiambil: boolean;
+  namaPelanggan?: string;
+  nomorHpPelanggan?: string;
+  alamatPelanggan?: string;
+  catatan?: string;
   kasir: {
     id: string;
     nama: string;
