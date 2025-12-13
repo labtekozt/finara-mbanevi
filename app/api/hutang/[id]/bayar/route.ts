@@ -7,7 +7,7 @@ import { createJournalEntryForDebtPayment } from "@/lib/accounting-utils";
 // POST - Bayar hutang
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -22,7 +22,7 @@ export async function POST(
     if (!jumlahBayar || jumlahBayar <= 0) {
       return NextResponse.json(
         { error: "Jumlah bayar harus lebih dari 0" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -54,7 +54,8 @@ export async function POST(
       // Update hutang
       const newTotalBayar = hutang.totalBayar + jumlahBayar;
       const newSisaHutang = hutang.totalHutang - newTotalBayar;
-      const newStatus = newSisaHutang <= 0 ? "LUNAS" : "BELUM_LUNAS";
+      const newStatus =
+        newSisaHutang <= 0 ? "LUNAS" : "BELUM_LUNAS";
 
       const updatedHutang = await tx.hutang.update({
         where: { id },
@@ -80,15 +81,13 @@ export async function POST(
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error processing hutang payment:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Failed to process payment";
-    const status =
-      errorMessage === "Hutang tidak ditemukan"
-        ? 404
-        : errorMessage === "Jumlah bayar melebihi sisa hutang"
-          ? 400
-          : 500;
-
-    return NextResponse.json({ error: errorMessage }, { status });
+    const errorMessage = error instanceof Error ? error.message : "Failed to process payment";
+    const status = errorMessage === "Hutang tidak ditemukan" ? 404 : 
+                   errorMessage === "Jumlah bayar melebihi sisa hutang" ? 400 : 500;
+    
+    return NextResponse.json(
+      { error: errorMessage },
+      { status }
+    );
   }
 }
