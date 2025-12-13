@@ -1,0 +1,51 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10 # Safety timeout as per PRD 4.2
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            # Stop script on first error
+            set -e
+
+            # Navigate to project directory
+            # Ensure this secret is set in GitHub: /var/www/finara or /home/user/finara
+            cd ${{ secrets.PROJECT_PATH }}
+
+            # Pull latest changes
+            echo "🚀 Pulling latest changes..."
+            git pull origin main
+
+            # Install dependencies
+            # using npm ci for faster, reliable installs (requires package-lock.json)
+            echo "📦 Installing dependencies..."
+            npm ci
+
+            # Build application
+            # Note: This runs on the VPS. Ensure the VPS has enough resources.
+            echo "🏗️ Building application..."
+            npm run build
+
+            # Restart PM2 process
+            # Ensure the app is already started with PM2 named 'finara' (or change variable)
+            echo "🔄 Restarting PM2 process..."
+            pm2 reload ${{ secrets.PM2_APP_NAME || 'finara' }} --update-env
+
+            echo "✅ Deployment successful!"

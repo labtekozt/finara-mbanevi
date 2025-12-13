@@ -1,0 +1,44 @@
+name: Database Backup
+
+on:
+  schedule:
+    - cron: '0 17 * * *' # Runs at 17:00 UTC (00:00 WIB next day)
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  backup:
+    name: Backup Database to Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Generate Backup on VPS
+        run: |
+          echo "Creating backup on remote server..."
+          ssh -i ~/.ssh/id_rsa ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "export PGPASSWORD='${{ secrets.DB_PASSWORD }}'; pg_dump -h localhost -U finara_user finara | gzip > /tmp/finara_backup.sql.gz"
+
+      - name: Download Backup to Runner
+        run: |
+          echo "Downloading backup file..."
+          FILENAME="finara_backup_$(date +%Y-%m-%d_%H-%M-%S).sql.gz"
+          scp -i ~/.ssh/id_rsa ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/tmp/finara_backup.sql.gz ./$FILENAME
+          echo "BACKUP_FILENAME=$FILENAME" >> $GITHUB_ENV
+
+      - name: Cleanup Remote Backup
+        run: |
+          echo "Removing temporary backup file on server..."
+          ssh -i ~/.ssh/id_rsa ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "rm -f /tmp/finara_backup.sql.gz"
+
+      - name: Upload Backup as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ env.BACKUP_FILENAME }}
+          path: ${{ env.BACKUP_FILENAME }}
+          retention-days: 30 # Simpan selama 30 hari di GitHub
