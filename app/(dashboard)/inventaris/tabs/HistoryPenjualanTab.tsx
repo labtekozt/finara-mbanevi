@@ -99,7 +99,7 @@ export function HistoryPenjualanTab({
                 title: "Total Qty Keluar",
                 value: sortedTransaksiKasir.reduce(
                   (sum, tr) =>
-                    sum + tr.itemTransaksi.reduce((s, item) => s + item.qty, 0),
+                    sum + tr.itemTransaksi.reduce((s, item) => s + Number(item.qty), 0),
                   0,
                 ),
                 description: "Unit terjual",
@@ -107,13 +107,13 @@ export function HistoryPenjualanTab({
               },
               {
                 title: "Total Nilai Penjualan",
-                value: `Rp ${sortedTransaksiKasir.reduce((sum, tr) => sum + tr.total, 0).toLocaleString("id-ID")}`,
+                value: `Rp ${sortedTransaksiKasir.reduce((sum, tr) => sum + Number(tr.total), 0).toLocaleString("id-ID")}`,
                 description: "Omset penjualan",
                 icon: TrendingDown,
               },
               {
                 title: "Rata-rata",
-                value: `Rp ${sortedTransaksiKasir.length > 0 ? (sortedTransaksiKasir.reduce((sum, tr) => sum + tr.total, 0) / sortedTransaksiKasir.length).toLocaleString("id-ID") : "0"}`,
+                value: `Rp ${sortedTransaksiKasir.length > 0 ? (sortedTransaksiKasir.reduce((sum, tr) => sum + Number(tr.total), 0) / sortedTransaksiKasir.length).toLocaleString("id-ID") : "0"}`,
                 description: "Per transaksi",
                 icon: TrendingDown,
               },
@@ -217,10 +217,14 @@ export function HistoryPenjualanTab({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        Rp {item.hargaSatuan.toLocaleString("id-ID")}
+                        <div className="truncate" title={`Rp ${item.hargaSatuan.toLocaleString("id-ID")}`}>
+                          Rp {item.hargaSatuan.toLocaleString("id-ID")}
+                        </div>
                       </TableCell>
                       <TableCell className="font-semibold">
-                        Rp {item.subtotal.toLocaleString("id-ID")}
+                        <div className="truncate" title={`Rp ${item.subtotal.toLocaleString("id-ID")}`}>
+                          Rp {item.subtotal.toLocaleString("id-ID")}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{tr.metodePembayaran}</Badge>

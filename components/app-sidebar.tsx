@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { hasPermission } from "@/lib/permissions";
 
 const menuItems = [
@@ -148,12 +149,34 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [openSubmenu, setOpenSubmenu] = React.useState<string | null>(null);
+  const [hutangPiutangCount, setHutangPiutangCount] = React.useState<number>(0);
 
   const filteredMenuItems = menuItems.filter((item) =>
     session?.user?.role
       ? hasPermission(session.user.role, item.permission)
       : false,
   );
+
+  // Fetch hutang/piutang count for badge
+  React.useEffect(() => {
+    async function fetchHutangPiutangCount() {
+      try {
+        const response = await fetch("/api/hutang-piutang/count");
+        if (response.ok) {
+          const data = await response.json();
+          setHutangPiutangCount(data.total);
+        }
+      } catch (error) {
+        // Silently fail - badge just won't show
+      }
+    }
+    if (session?.user) {
+      fetchHutangPiutangCount();
+      // Refresh every 30 seconds
+      const interval = setInterval(fetchHutangPiutangCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [session?.user]);
 
   // Auto-open submenu if current path matches (only on mount)
   React.useEffect(() => {
@@ -251,6 +274,15 @@ export function AppSidebar() {
                       <item.icon className="h-4 w-4 text-white" />
                     </div>
                     <span className="text-gray-900">{item.title}</span>
+                    {item.href === "/hutang-piutang" &&
+                      hutangPiutangCount > 0 && (
+                        <Badge
+                          variant="destructive"
+                          className="ml-auto h-5 min-w-5 px-1.5 text-xs font-bold"
+                        >
+                          {hutangPiutangCount}
+                        </Badge>
+                      )}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

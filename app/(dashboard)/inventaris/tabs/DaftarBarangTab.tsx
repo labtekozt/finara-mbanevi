@@ -122,7 +122,7 @@ export function DaftarBarangTab({
             },
             {
               title: "Total Nilai",
-              value: `Rp ${originalBarang.reduce((sum, item) => sum + item.stok * item.hargaBeli, 0).toLocaleString("id-ID")}`,
+              value: `Rp ${originalBarang.reduce((sum, item) => sum + Number(item.stok) * Number(item.hargaBeli), 0).toLocaleString("id-ID")}`,
               description: "Berdasarkan harga beli",
               icon: Package,
             },
@@ -301,10 +301,14 @@ export function DaftarBarangTab({
                       </span>
                     </TableCell>
                     <TableCell>
-                      Rp {item.hargaBeli.toLocaleString("id-ID")}
+                      <div className="truncate" title={`Rp ${item.hargaBeli.toLocaleString("id-ID")}`}>
+                        Rp {item.hargaBeli.toLocaleString("id-ID")}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      Rp {item.hargaJual.toLocaleString("id-ID")}
+                      <div className="truncate" title={`Rp ${item.hargaJual.toLocaleString("id-ID")}`}>
+                        Rp {item.hargaJual.toLocaleString("id-ID")}
+                      </div>
                     </TableCell>
                     <TableCell>{item.lokasi.namaLokasi}</TableCell>
                     <TableCell className="text-right">

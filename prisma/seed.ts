@@ -67,13 +67,6 @@ async function main() {
     },
   });
 
-  const gudangCabang = await prisma.lokasi.create({
-    data: {
-      namaLokasi: "Gudang Cabang Bandung",
-      alamat: "Jl. Soekarno Hatta No. 456, Bandung",
-    },
-  });
-
   console.log("✓ Locations created");
 
   // Create accounting period

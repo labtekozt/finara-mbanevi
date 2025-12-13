@@ -224,8 +224,11 @@ export default function HutangPiutangPage() {
   }
 
   // Calculate totals
-  const totalHutang = hutang.reduce((sum, h) => sum + h.sisaHutang, 0);
-  const totalPiutang = piutang.reduce((sum, p) => sum + p.sisaPiutang, 0);
+  const totalHutang = hutang.reduce((sum, h) => sum + Number(h.sisaHutang), 0);
+  const totalPiutang = piutang.reduce(
+    (sum, p) => sum + Number(p.sisaPiutang),
+    0,
+  );
   const totalHutangLunas = hutang.filter((h) => h.status === "LUNAS").length;
   const totalPiutangLunas = piutang.filter((p) => p.status === "LUNAS").length;
 
@@ -247,7 +250,10 @@ export default function HutangPiutangPage() {
               <TrendingDown className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">
+              <div
+                className="text-2xl font-bold text-red-600 truncate"
+                title={`Rp ${totalHutang.toLocaleString("id-ID")}`}
+              >
                 Rp {totalHutang.toLocaleString("id-ID")}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -263,7 +269,10 @@ export default function HutangPiutangPage() {
               <TrendingUp className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+              <div
+                className="text-2xl font-bold text-green-600 truncate"
+                title={`Rp ${totalPiutang.toLocaleString("id-ID")}`}
+              >
                 Rp {totalPiutang.toLocaleString("id-ID")}
               </div>
               <p className="text-xs text-muted-foreground">

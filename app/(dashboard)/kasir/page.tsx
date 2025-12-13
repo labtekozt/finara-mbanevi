@@ -45,9 +45,12 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Package,
 } from "lucide-react";
 import { toast } from "sonner";
 import { CartItem } from "@/types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Barang {
   id: string;
@@ -85,6 +88,13 @@ export default function KasirPage() {
     nama: "",
     nomorHp: "",
     alamat: "",
+  });
+  // Pending pickup (barang belum diambil)
+  const [belumDiambil, setBelumDiambil] = useState(false);
+  const [dataPendingPickup, setDataPendingPickup] = useState({
+    nama: "",
+    nomorHp: "",
+    catatan: "",
   });
 
   // Calculations
@@ -247,6 +257,13 @@ export default function KasirPage() {
       }
     }
 
+    if (belumDiambil) {
+      if (!dataPendingPickup.nama.trim()) {
+        toast.error("Nama pelanggan harus diisi untuk barang belum diambil");
+        return;
+      }
+    }
+
     setConfirmPaymentDialog(true);
   }
 
@@ -274,11 +291,22 @@ export default function KasirPage() {
           kembalian,
           // Data pelanggan untuk kredit
           namaPelanggan:
-            metodePembayaran === "kredit" ? dataPelanggan.nama : null,
+            metodePembayaran === "kredit"
+              ? dataPelanggan.nama
+              : belumDiambil
+                ? dataPendingPickup.nama
+                : null,
           nomorHpPelanggan:
-            metodePembayaran === "kredit" ? dataPelanggan.nomorHp : null,
+            metodePembayaran === "kredit"
+              ? dataPelanggan.nomorHp
+              : belumDiambil
+                ? dataPendingPickup.nomorHp
+                : null,
           alamatPelanggan:
             metodePembayaran === "kredit" ? dataPelanggan.alamat : null,
+          // Pending pickup data
+          belumDiambil,
+          catatan: belumDiambil ? dataPendingPickup.catatan : null,
         }),
       });
 
@@ -304,6 +332,8 @@ export default function KasirPage() {
       setJumlahBayar(0);
       setJumlahBayarDisplay("");
       setDataPelanggan({ nama: "", nomorHp: "", alamat: "" });
+      setDataPendingPickup({ nama: "", nomorHp: "", catatan: "" });
+      setBelumDiambil(false);
       setMetodePembayaran("tunai");
       fetchBarang(); // Refresh stock
       toast.success("Transaksi berhasil!");
@@ -765,6 +795,79 @@ export default function KasirPage() {
                       </div>
                     )}
 
+                    {/* Checkbox Barang Belum Diambil */}
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg bg-gray-50">
+                      <Checkbox
+                        id="belum-diambil"
+                        checked={belumDiambil}
+                        onCheckedChange={(checked) =>
+                          setBelumDiambil(checked === true)
+                        }
+                      />
+                      <Label
+                        htmlFor="belum-diambil"
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <Package className="h-4 w-4 text-orange-600" />
+                        <span className="text-sm font-medium">
+                          Barang belum diambil
+                        </span>
+                      </Label>
+                    </div>
+
+                    {/* Form Data Pending Pickup */}
+                    {belumDiambil && (
+                      <div className="space-y-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div className="text-sm font-medium text-orange-800">
+                          Data Pengambilan Barang
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="pickup-nama">Nama Pelanggan *</Label>
+                          <Input
+                            id="pickup-nama"
+                            value={dataPendingPickup.nama}
+                            onChange={(e) =>
+                              setDataPendingPickup({
+                                ...dataPendingPickup,
+                                nama: e.target.value,
+                              })
+                            }
+                            placeholder="Nama lengkap pelanggan"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="pickup-hp">Nomor Telepon</Label>
+                          <Input
+                            id="pickup-hp"
+                            value={dataPendingPickup.nomorHp}
+                            onChange={(e) =>
+                              setDataPendingPickup({
+                                ...dataPendingPickup,
+                                nomorHp: e.target.value,
+                              })
+                            }
+                            placeholder="08xxxxxxxxxx"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="pickup-catatan">Catatan</Label>
+                          <Textarea
+                            id="pickup-catatan"
+                            value={dataPendingPickup.catatan}
+                            onChange={(e) =>
+                              setDataPendingPickup({
+                                ...dataPendingPickup,
+                                catatan: e.target.value,
+                              })
+                            }
+                            placeholder="Catatan tambahan untuk pengambilan..."
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {/* Jumlah Bayar */}
                     <div className="space-y-2">
                       <Label htmlFor="bayar">Jumlah Bayar</Label>
@@ -888,6 +991,17 @@ export default function KasirPage() {
             {/* Payment Details */}
             <div className="space-y-2 p-4 bg-gray-50 rounded-lg">
               <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Tanggal Pembelian:</span>
+                <span className="font-medium">
+                  {new Date().toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Tipe Pembayaran:</span>
                 <span className="font-bold text-lg capitalize">
                   {metodePembayaran}
@@ -914,6 +1028,42 @@ export default function KasirPage() {
                 </div>
               )}
             </div>
+
+            {/* Pending Pickup Info */}
+            {belumDiambil && (
+              <div className="space-y-2 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Package className="h-5 w-5 text-orange-600" />
+                  <span className="font-medium text-orange-800">
+                    Barang Belum Diambil
+                  </span>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Nama:</span>
+                    <span className="font-medium">
+                      {dataPendingPickup.nama}
+                    </span>
+                  </div>
+                  {dataPendingPickup.nomorHp && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">No. Telepon:</span>
+                      <span className="font-medium">
+                        {dataPendingPickup.nomorHp}
+                      </span>
+                    </div>
+                  )}
+                  {dataPendingPickup.catatan && (
+                    <div className="flex flex-col">
+                      <span className="text-gray-600">Catatan:</span>
+                      <span className="font-medium text-orange-700">
+                        {dataPendingPickup.catatan}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button

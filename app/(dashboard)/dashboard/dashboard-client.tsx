@@ -250,13 +250,19 @@ export function DashboardClient() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <div className="text-2xl font-bold text-blue-900">
+              <div 
+                className="text-2xl font-bold text-blue-900 truncate"
+                title={`Rp ${data.stats.totalPenjualan.toLocaleString("id-ID")}`}
+              >
                 Rp {data.stats.totalPenjualan.toLocaleString("id-ID")}
               </div>
               <p className="text-xs text-blue-700">Total Pendapatan</p>
             </div>
             <div className="border-t border-blue-200 pt-3">
-              <div className="text-xl font-bold text-blue-900">
+              <div 
+                className="text-xl font-bold text-blue-900 truncate"
+                title={data.stats.totalTransaksi.toString()}
+              >
                 {data.stats.totalTransaksi}
               </div>
               <p className="text-xs text-blue-700">Jumlah Barang Terjual</p>
@@ -273,7 +279,10 @@ export function DashboardClient() {
             <AlertTriangle className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-900">
+            <div 
+              className="text-2xl font-bold text-orange-900 truncate"
+              title={data.stats.barangStokRendah.toString()}
+            >
               {data.stats.barangStokRendah}
             </div>
             <p className="text-xs text-orange-700">Perlu restock</p>
@@ -292,7 +301,10 @@ export function DashboardClient() {
             <div>
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-green-600" />
-                <div className="text-xl font-bold text-green-600">
+                <div 
+                  className="text-xl font-bold text-green-600 truncate"
+                  title={data.stats.totalBarangMasuk.toString()}
+                >
                   {data.stats.totalBarangMasuk}
                 </div>
               </div>
@@ -301,7 +313,10 @@ export function DashboardClient() {
             <div className="border-t border-blue-200 pt-3">
               <div className="flex items-center gap-2">
                 <TrendingDown className="h-4 w-4 text-red-600" />
-                <div className="text-xl font-bold text-red-600">
+                <div 
+                  className="text-xl font-bold text-red-600 truncate"
+                  title={data.stats.totalBarangKeluar.toString()}
+                >
                   {data.stats.totalBarangKeluar}
                 </div>
               </div>

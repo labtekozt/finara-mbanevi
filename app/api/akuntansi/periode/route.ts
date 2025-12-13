@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
 import logger from "@/lib/logger";
+import { getActiveAccountingPeriod } from "@/lib/accounting-utils";
 
 // GET /api/akuntansi/periode - Get accounting periods
 export async function GET(request: Request) {
@@ -25,6 +26,15 @@ export async function GET(request: Request) {
 
     if (isActive !== null) where.isActive = isActive === "true";
     if (isClosed !== null) where.isClosed = isClosed === "true";
+
+    // Ensure at least one active period exists (auto-create if needed)
+    // This helps non-accounting users by automatically setting up the current period
+    try {
+      await getActiveAccountingPeriod(undefined, session.user.id);
+    } catch (e) {
+      logger.warn("Failed to auto-create active period in GET /periode", e);
+      // Continue anyway, maybe just list what exists
+    }
 
     const periode = await prisma.periodeAkuntansi.findMany({
       where,

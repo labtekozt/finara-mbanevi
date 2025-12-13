@@ -91,10 +91,12 @@ model TransaksiKasir {
   kembalian       Decimal  @db.Decimal(15, 2)
   kasirId         String
   catatan         String?
-  // Data pelanggan untuk kredit
+  // Data pelanggan untuk kredit atau pending pickup
   namaPelanggan   String?
   nomorHpPelanggan String?
   alamatPelanggan String?
+  // Pending pickup flag
+  belumDiambil    Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   

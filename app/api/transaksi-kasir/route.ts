@@ -7,6 +7,7 @@ import {
   createJournalEntryForSale,
   createJournalEntryForCOGS,
   createJournalEntryForCompleteSale,
+  getActiveAccountingPeriod,
 } from "@/lib/accounting-utils";
 import { z } from "zod";
 import { serializeDecimal } from "@/lib/utils";
@@ -29,11 +30,13 @@ const transaksiSchema = z.object({
   metodePembayaran: z.string(),
   jumlahBayar: z.number(),
   kembalian: z.number(),
-  catatan: z.string().optional(),
-  // Data pelanggan untuk kredit
-  namaPelanggan: z.string().optional(),
-  nomorHpPelanggan: z.string().optional(),
-  alamatPelanggan: z.string().optional(),
+  catatan: z.string().optional().nullable(),
+  // Data pelanggan untuk kredit atau pending pickup
+  namaPelanggan: z.string().optional().nullable(),
+  nomorHpPelanggan: z.string().optional().nullable(),
+  alamatPelanggan: z.string().optional().nullable(),
+  // Pending pickup flag
+  belumDiambil: z.boolean().default(false),
 });
 
 // GET - List transactions with filters
@@ -102,129 +105,161 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = transaksiSchema.parse(body);
 
-    // Create transaction with items and update stock
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Atomic Stock Check & Update
-      // We do this first to ensure we have the stock locked/updated before proceeding
-      for (const item of validatedData.items) {
-        const updateResult = await tx.barang.updateMany({
-          where: {
-            id: item.barangId,
-            stok: { gte: item.qty }, // Atomic check: only update if stock >= qty
-          },
+    // Helper function to execute transaction logic
+    const executeTransaction = async () => {
+      return await prisma.$transaction(async (tx) => {
+        // 1. Atomic Stock Check & Update
+        // We do this first to ensure we have the stock locked/updated before proceeding
+        for (const item of validatedData.items) {
+          const updateResult = await tx.barang.updateMany({
+            where: {
+              id: item.barangId,
+              stok: { gte: item.qty }, // Atomic check: only update if stock >= qty
+            },
+            data: {
+              stok: { decrement: item.qty },
+            },
+          });
+
+          if (updateResult.count === 0) {
+            // If count is 0, it means either item doesn't exist or stock is insufficient
+            const barang = await tx.barang.findUnique({
+              where: { id: item.barangId },
+            });
+            if (!barang) {
+              throw new Error(`Barang ${item.namaBarang} tidak ditemukan`);
+            } else {
+              throw new Error(
+                `Stok ${item.namaBarang} tidak cukup. Tersedia: ${barang.stok} ${barang.satuan}`,
+              );
+            }
+          }
+        }
+
+        // 2. Create transaction header
+        const newTransaksi = await tx.transaksiKasir.create({
           data: {
-            stok: { decrement: item.qty },
+            nomorTransaksi: generateKasirNumber(),
+            subtotal: validatedData.subtotal,
+            pajak: validatedData.pajak,
+            diskon: validatedData.diskon,
+            total: validatedData.total,
+            metodePembayaran: validatedData.metodePembayaran,
+            jumlahBayar: validatedData.jumlahBayar,
+            kembalian: validatedData.kembalian,
+            kasirId: session.user.id,
+            catatan: validatedData.catatan,
+            namaPelanggan: validatedData.namaPelanggan,
+            nomorHpPelanggan: validatedData.nomorHpPelanggan,
+            alamatPelanggan: validatedData.alamatPelanggan,
+            belumDiambil: validatedData.belumDiambil,
           },
         });
 
-        if (updateResult.count === 0) {
-          // If count is 0, it means either item doesn't exist or stock is insufficient
+        // 3. Create transaction items
+        const itemsForAccounting = [];
+        for (const item of validatedData.items) {
+          await tx.itemTransaksi.create({
+            data: {
+              transaksiKasirId: newTransaksi.id,
+              barangId: item.barangId,
+              namaBarang: item.namaBarang,
+              hargaSatuan: item.hargaSatuan,
+              qty: item.qty,
+              subtotal: item.subtotal,
+            },
+          });
+
+          // Fetch cost price for accounting (COGS)
           const barang = await tx.barang.findUnique({
             where: { id: item.barangId },
           });
-          if (!barang) {
-            throw new Error(`Barang ${item.namaBarang} tidak ditemukan`);
-          } else {
-            throw new Error(
-              `Stok ${item.namaBarang} tidak cukup. Tersedia: ${barang.stok} ${barang.satuan}`,
-            );
+          if (barang) {
+            itemsForAccounting.push({
+              barangId: item.barangId,
+              qty: item.qty,
+              costPrice: barang.hargaBeli.toNumber(), // Use purchase price for COGS
+            });
           }
         }
-      }
 
-      // 2. Create transaction header
-      const newTransaksi = await tx.transaksiKasir.create({
-        data: {
-          nomorTransaksi: generateKasirNumber(),
-          subtotal: validatedData.subtotal,
-          pajak: validatedData.pajak,
-          diskon: validatedData.diskon,
-          total: validatedData.total,
-          metodePembayaran: validatedData.metodePembayaran,
-          jumlahBayar: validatedData.jumlahBayar,
-          kembalian: validatedData.kembalian,
-          kasirId: session.user.id,
-          catatan: validatedData.catatan,
-          namaPelanggan: validatedData.namaPelanggan,
-          nomorHpPelanggan: validatedData.nomorHpPelanggan,
-          alamatPelanggan: validatedData.alamatPelanggan,
-        },
-      });
-
-      // 3. Create transaction items
-      const itemsForAccounting = [];
-      for (const item of validatedData.items) {
-        await tx.itemTransaksi.create({
+        // 4. Log activity
+        await tx.activityLog.create({
           data: {
-            transaksiKasirId: newTransaksi.id,
-            barangId: item.barangId,
-            namaBarang: item.namaBarang,
-            hargaSatuan: item.hargaSatuan,
-            qty: item.qty,
-            subtotal: item.subtotal,
+            userId: session.user.id,
+            userName: session.user.name || "",
+            action: "CREATE",
+            entity: "TransaksiKasir",
+            entityId: newTransaksi.id,
+            description: `Transaksi kasir ${newTransaksi.nomorTransaksi} - Total: Rp ${validatedData.total.toLocaleString("id-ID")}`,
           },
         });
 
-        // Fetch cost price for accounting (COGS)
-        const barang = await tx.barang.findUnique({
-          where: { id: item.barangId },
-        });
-        if (barang) {
-          itemsForAccounting.push({
-            barangId: item.barangId,
-            qty: item.qty,
-            costPrice: barang.hargaBeli.toNumber(), // Use purchase price for COGS
+        // 5. Create Piutang if payment method is kredit
+        if (validatedData.metodePembayaran === "kredit") {
+          const deskripsi = validatedData.items
+            .map((item) => `${item.namaBarang} x${item.qty}`)
+            .join(", ");
+
+          await tx.piutang.create({
+            data: {
+              nomorPiutang: `PTG-${Date.now()}`,
+              transaksiKasirId: newTransaksi.id,
+              namaPelanggan: validatedData.namaPelanggan || "Pelanggan",
+              nomorHp: validatedData.nomorHpPelanggan,
+              alamat: validatedData.alamatPelanggan,
+              deskripsi: `Penjualan: ${deskripsi}`,
+              totalPiutang: validatedData.total,
+              totalBayar: 0,
+              sisaPiutang: validatedData.total,
+              status: "BELUM_LUNAS",
+            },
           });
         }
-      }
 
-      // 4. Log activity
-      await tx.activityLog.create({
-        data: {
-          userId: session.user.id,
-          userName: session.user.name || "",
-          action: "CREATE",
-          entity: "TransaksiKasir",
-          entityId: newTransaksi.id,
-          description: `Transaksi kasir ${newTransaksi.nomorTransaksi} - Total: Rp ${validatedData.total.toLocaleString("id-ID")}`,
-        },
+        // 6. Create accounting journal entry (critical for balance)
+        // Now inside the transaction!
+        await createJournalEntryForCompleteSale(
+          newTransaksi.id,
+          validatedData.total,
+          itemsForAccounting,
+          session.user.id,
+          validatedData.metodePembayaran,
+          tx, // Pass transaction client
+        );
+
+        return newTransaksi;
       });
+    };
 
-      // 5. Create Piutang if payment method is kredit
-      if (validatedData.metodePembayaran === "kredit") {
-        const deskripsi = validatedData.items
-          .map((item) => `${item.namaBarang} x${item.qty}`)
-          .join(", ");
-
-        await tx.piutang.create({
-          data: {
-            nomorPiutang: `PTG-${Date.now()}`,
-            transaksiKasirId: newTransaksi.id,
-            namaPelanggan: validatedData.namaPelanggan || "Pelanggan",
-            nomorHp: validatedData.nomorHpPelanggan,
-            alamat: validatedData.alamatPelanggan,
-            deskripsi: `Penjualan: ${deskripsi}`,
-            totalPiutang: validatedData.total,
-            totalBayar: 0,
-            sisaPiutang: validatedData.total,
-            status: "BELUM_LUNAS",
-          },
-        });
+    // Execute transaction with retry logic for accounting period
+    let result;
+    try {
+      result = await executeTransaction();
+    } catch (error: any) {
+      // If error is due to missing accounting period, try to generate it and retry
+      if (
+        error.message &&
+        (error.message.includes("Tidak ada periode akuntansi aktif") ||
+          error.message.includes("periode akuntansi"))
+      ) {
+        logger.warn(
+          "Transaction failed due to missing accounting period. Attempting to auto-generate and retry...",
+        );
+        try {
+          // Force check/create active period outside of transaction
+          await getActiveAccountingPeriod();
+          // Retry transaction
+          result = await executeTransaction();
+        } catch (retryError) {
+          // If retry fails, throw original error or retry error
+          logger.error("Retry transaction failed:", retryError);
+          throw error; // Throw original error to be handled by outer catch
+        }
+      } else {
+        throw error;
       }
-
-      // 6. Create accounting journal entry (critical for balance)
-      // Now inside the transaction!
-      await createJournalEntryForCompleteSale(
-        newTransaksi.id,
-        validatedData.total,
-        itemsForAccounting,
-        session.user.id,
-        validatedData.metodePembayaran,
-        tx, // Pass transaction client
-      );
-
-      return newTransaksi;
-    });
+    }
 
     // Fetch complete transaction data for response
     const completeTransaksi = await prisma.transaksiKasir.findUnique({

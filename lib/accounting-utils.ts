@@ -2,6 +2,7 @@ import { prisma } from "./prisma";
 import { generateTransactionNumber } from "./transaction-number";
 import { Prisma } from "@prisma/client";
 import logger from "@/lib/logger";
+import { startOfYear, endOfYear } from "date-fns";
 
 // Account codes (these should match your chart of accounts)
 export const ACCOUNT_CODES = {
@@ -29,11 +30,83 @@ export const ACCOUNT_CODES = {
 };
 
 // Get active accounting period
-export async function getActiveAccountingPeriod(tx?: Prisma.TransactionClient) {
+export async function getActiveAccountingPeriod(
+  tx?: Prisma.TransactionClient,
+  userId?: string,
+) {
   const client = tx || prisma;
-  return await client.periodeAkuntansi.findFirst({
+
+  // 1. Cek periode aktif yang sudah diset manual
+  let periode = await client.periodeAkuntansi.findFirst({
     where: { isActive: true },
   });
+
+  const today = new Date();
+
+  // If active period exists but is expired (end date < today)
+  if (periode && periode.tanggalAkhir < today) {
+    // Close it automatically
+    await closeAccountingPeriod(periode.id, userId || "SYSTEM", client);
+    periode = null; // Reset so we find/create new one
+  }
+
+  if (periode) return periode;
+
+  // 2. Jika tidak ada, cari periode yang mencakup tanggal hari ini
+  periode = await client.periodeAkuntansi.findFirst({
+    where: {
+      tanggalMulai: { lte: today },
+      tanggalAkhir: { gte: today },
+      isClosed: false,
+    },
+  });
+
+  if (periode) {
+    // Jika ditemukan tapi belum aktif, aktifkan
+    if (!periode.isActive) {
+      await client.periodeAkuntansi.update({
+        where: { id: periode.id },
+        data: { isActive: true },
+      });
+      periode.isActive = true;
+    }
+    return periode;
+  }
+
+  // 3. Check for ANY open periods in the past and close them
+  const pastOpenPeriods = await client.periodeAkuntansi.findMany({
+    where: {
+      tanggalAkhir: { lt: today },
+      isClosed: false,
+    },
+  });
+
+  for (const p of pastOpenPeriods) {
+    await closeAccountingPeriod(p.id, userId || "SYSTEM", client);
+  }
+
+  // 4. Jika sama sekali tidak ada, buat periode baru otomatis untuk tahun ini
+  const startDate = startOfYear(today);
+  const endDate = endOfYear(today);
+  const year = today.getFullYear();
+
+  try {
+    periode = await client.periodeAkuntansi.create({
+      data: {
+        nama: `Periode Tahun ${year}`,
+        tanggalMulai: startDate,
+        tanggalAkhir: endDate,
+        isActive: true,
+        isClosed: false,
+      },
+    });
+
+    logger.info(`Created automatic accounting period: ${periode.nama}`);
+    return periode;
+  } catch (error) {
+    logger.error("Failed to create automatic accounting period", error);
+    throw error;
+  }
 }
 
 // Get account by code
@@ -56,7 +129,7 @@ export async function createJournalEntryForSale(
   totalAmount: number,
   userId: string,
 ) {
-  const periode = await getActiveAccountingPeriod();
+  const periode = await getActiveAccountingPeriod(undefined, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
@@ -119,7 +192,7 @@ export async function createJournalEntryForPurchase(
   totalAmount: number,
   userId: string,
 ) {
-  const periode = await getActiveAccountingPeriod();
+  const periode = await getActiveAccountingPeriod(undefined, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
@@ -186,7 +259,7 @@ export async function createJournalEntryForCompleteSale(
   tx?: Prisma.TransactionClient,
 ) {
   const client = tx || prisma;
-  const periode = await getActiveAccountingPeriod(client);
+  const periode = await getActiveAccountingPeriod(client, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
@@ -296,7 +369,7 @@ export async function createJournalEntryForCOGS(
   costPrice: number,
   userId: string,
 ) {
-  const periode = await getActiveAccountingPeriod();
+  const periode = await getActiveAccountingPeriod(undefined, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
@@ -358,7 +431,7 @@ export async function createJournalEntryForSalary(
   amount: number,
   userId: string,
 ) {
-  const periode = await getActiveAccountingPeriod();
+  const periode = await getActiveAccountingPeriod(undefined, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
@@ -421,7 +494,7 @@ export async function createJournalEntryForInventoryAdjustment(
   totalAmount: number,
   userId: string,
 ) {
-  const periode = await getActiveAccountingPeriod();
+  const periode = await getActiveAccountingPeriod(undefined, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
@@ -619,7 +692,7 @@ export async function createJournalEntryForOutgoingTransaction(
   tx?: Prisma.TransactionClient,
 ) {
   const client = tx || prisma;
-  const periode = await getActiveAccountingPeriod(client);
+  const periode = await getActiveAccountingPeriod(client, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
@@ -772,7 +845,7 @@ export async function createJournalEntryForPurchaseReturn(
   tx?: Prisma.TransactionClient,
 ) {
   const client = tx || prisma;
-  const periode = await getActiveAccountingPeriod(client);
+  const periode = await getActiveAccountingPeriod(client, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
@@ -876,7 +949,7 @@ export async function createJournalEntryForSalesReturn(
   tx?: Prisma.TransactionClient,
 ) {
   const client = tx || prisma;
-  const periode = await getActiveAccountingPeriod(client);
+  const periode = await getActiveAccountingPeriod(client, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
@@ -979,7 +1052,7 @@ export async function createJournalEntryForStockAdjustment(
   isIncrease: boolean,
   userId: string,
 ) {
-  const periode = await getActiveAccountingPeriod();
+  const periode = await getActiveAccountingPeriod(undefined, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
@@ -1069,7 +1142,7 @@ export async function createJournalEntryForStockAddition(
   tx?: Prisma.TransactionClient,
 ) {
   const client = tx || prisma;
-  const periode = await getActiveAccountingPeriod(client);
+  const periode = await getActiveAccountingPeriod(client, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
@@ -1261,7 +1334,7 @@ export async function createJournalEntryForDebtPayment(
   tx?: Prisma.TransactionClient,
 ) {
   const client = tx || prisma;
-  const periode = await getActiveAccountingPeriod(client);
+  const periode = await getActiveAccountingPeriod(client, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
@@ -1328,7 +1401,7 @@ export async function createJournalEntryForReceivablePayment(
   tx?: Prisma.TransactionClient,
 ) {
   const client = tx || prisma;
-  const periode = await getActiveAccountingPeriod(client);
+  const periode = await getActiveAccountingPeriod(client, userId);
   if (!periode) {
     throw new Error("Tidak ada periode akuntansi aktif");
   }
@@ -1384,4 +1457,199 @@ export async function createJournalEntryForReceivablePayment(
   });
 
   return jurnalEntry;
+}
+
+// Close accounting period automatically
+export async function closeAccountingPeriod(
+  periodeId: string,
+  userId: string = "SYSTEM",
+  tx?: Prisma.TransactionClient,
+) {
+  const client = tx || prisma;
+
+  const periode = await client.periodeAkuntansi.findUnique({
+    where: { id: periodeId },
+  });
+
+  if (!periode) {
+    throw new Error("Periode not found");
+  }
+
+  if (periode.isClosed) {
+    return; // Already closed
+  }
+
+  // Get revenue and expense accounts
+  const revenueAccounts = await client.akun.findMany({
+    where: { tipe: "REVENUE", isActive: true },
+  });
+
+  const expenseAccounts = await client.akun.findMany({
+    where: { tipe: "EXPENSE", isActive: true },
+  });
+
+  // Calculate balances
+  // Revenue (Credit normal): Balance = Credit - Debit
+  // If Balance > 0, it means we have Credit balance. To close, we Debit Revenue.
+  const revenueBalances = await Promise.all(
+    revenueAccounts.map(async (akun) => {
+      const details = await client.jurnalDetail.findMany({
+        where: {
+          akunId: akun.id,
+          jurnal: { periodeId: periodeId },
+        },
+        select: { debit: true, kredit: true },
+      });
+
+      const balance = details.reduce(
+        (sum, detail) =>
+          sum + detail.kredit.toNumber() - detail.debit.toNumber(),
+        0,
+      );
+      return { akun, balance };
+    }),
+  );
+
+  // Expense (Debit normal): Balance = Debit - Credit
+  // If Balance > 0, it means we have Debit balance. To close, we Credit Expense.
+  const expenseBalances = await Promise.all(
+    expenseAccounts.map(async (akun) => {
+      const details = await client.jurnalDetail.findMany({
+        where: {
+          akunId: akun.id,
+          jurnal: { periodeId: periodeId },
+        },
+        select: { debit: true, kredit: true },
+      });
+
+      const balance = details.reduce(
+        (sum, detail) =>
+          sum + detail.debit.toNumber() - detail.kredit.toNumber(),
+        0,
+      );
+      return { akun, balance };
+    }),
+  );
+
+  const totalRevenue = revenueBalances.reduce(
+    (sum, item) => sum + item.balance,
+    0,
+  );
+  const totalExpenses = expenseBalances.reduce(
+    (sum, item) => sum + item.balance,
+    0,
+  );
+
+  // Find Retained Earnings account
+  let retainedEarningsAccount = await client.akun.findFirst({
+    where: {
+      tipe: "EQUITY",
+      nama: { contains: "Laba Ditahan", mode: "insensitive" },
+    },
+  });
+
+  if (!retainedEarningsAccount) {
+    // Try to find by code
+    const code = ACCOUNT_CODES.RETAINED_EARNINGS;
+    retainedEarningsAccount = await client.akun.findFirst({
+      where: { kode: code },
+    });
+
+    if (!retainedEarningsAccount) {
+      // Create it
+      retainedEarningsAccount = await client.akun.create({
+        data: {
+          kode: code,
+          nama: "Laba Ditahan",
+          tipe: "EQUITY",
+          kategori: "RETAINED_EARNINGS",
+          isActive: true,
+        },
+      });
+    }
+  }
+
+  // Create closing entries
+  // 1. Close Revenue (Debit Revenue, Credit Retained Earnings)
+  if (totalRevenue > 0) {
+    await client.jurnalEntry.create({
+      data: {
+        nomorJurnal: generateTransactionNumber("JR"),
+        tanggal: periode.tanggalAkhir,
+        deskripsi: `Penutupan akun pendapatan periode ${periode.nama}`,
+        referensi: `CLOSING-${periode.nama}-REV`,
+        tipeReferensi: "PERIOD_CLOSING",
+        periodeId: periodeId,
+        userId,
+        isPosted: true,
+        details: {
+          create: [
+            // Credit Retained Earnings
+            {
+              akunId: retainedEarningsAccount.id,
+              debit: 0,
+              kredit: totalRevenue,
+              deskripsi: "Penutupan akun pendapatan",
+            },
+            // Debit Revenue Accounts
+            ...revenueBalances
+              .filter((item) => item.balance > 0)
+              .map((item) => ({
+                akunId: item.akun.id,
+                debit: item.balance,
+                kredit: 0,
+                deskripsi: `Penutupan ${item.akun.nama}`,
+              })),
+          ],
+        },
+      },
+    });
+  }
+
+  // 2. Close Expense (Credit Expense, Debit Retained Earnings)
+  if (totalExpenses > 0) {
+    await client.jurnalEntry.create({
+      data: {
+        nomorJurnal: generateTransactionNumber("JR"),
+        tanggal: periode.tanggalAkhir,
+        deskripsi: `Penutupan akun beban periode ${periode.nama}`,
+        referensi: `CLOSING-${periode.nama}-EXP`,
+        tipeReferensi: "PERIOD_CLOSING",
+        periodeId: periodeId,
+        userId,
+        isPosted: true,
+        details: {
+          create: [
+            // Debit Retained Earnings
+            {
+              akunId: retainedEarningsAccount.id,
+              debit: totalExpenses,
+              kredit: 0,
+              deskripsi: "Penutupan akun beban",
+            },
+            // Credit Expense Accounts
+            ...expenseBalances
+              .filter((item) => item.balance > 0)
+              .map((item) => ({
+                akunId: item.akun.id,
+                debit: 0,
+                kredit: item.balance,
+                deskripsi: `Penutupan ${item.akun.nama}`,
+              })),
+          ],
+        },
+      },
+    });
+  }
+
+  // Mark as closed
+  await client.periodeAkuntansi.update({
+    where: { id: periodeId },
+    data: {
+      isActive: false,
+      isClosed: true,
+    },
+  });
+
+  logger.info(`Closed accounting period: ${periode.nama}`);
 }
