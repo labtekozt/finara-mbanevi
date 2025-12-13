@@ -22,6 +22,19 @@ export interface Lokasi {
   alamat?: string;
 }
 
+export interface TransaksiMasuk {
+  id: string;
+  nomorTransaksi: string;
+  tanggal: string;
+  qty: number;
+  hargaBeli: number;
+  totalNilai: number;
+  sumber: string;
+  keterangan?: string;
+  barang: Barang;
+  lokasi: Lokasi;
+}
+
 export interface TransaksiKeluar {
   id: string;
   nomorTransaksi: string;

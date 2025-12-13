@@ -105,6 +105,28 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Create hutang if payment method is CREDIT
+      if (
+        validatedData.reason === "PURCHASE" &&
+        validatedData.paymentMethod === "CREDIT"
+      ) {
+        const nomorHutang = `HTG-${Date.now()}`;
+        const deskripsi = `Pembelian ${newTransaksi.barang.nama} - ${validatedData.qty} ${newTransaksi.barang.satuan}`;
+
+        await tx.hutang.create({
+          data: {
+            nomorHutang,
+            transaksiMasukId: newTransaksi.id,
+            sumberHutang: validatedData.sumber,
+            deskripsi,
+            totalHutang: totalNilai,
+            totalBayar: 0,
+            sisaHutang: totalNilai,
+            status: "BELUM_LUNAS",
+          },
+        });
+      }
+
       // Log activity
       await tx.activityLog.create({
         data: {

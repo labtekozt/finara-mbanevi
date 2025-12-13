@@ -91,11 +91,16 @@ model TransaksiKasir {
   kembalian       Float
   kasirId         String
   catatan         String?
+  // Data pelanggan untuk kredit
+  namaPelanggan   String?
+  nomorHpPelanggan String?
+  alamatPelanggan String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
   kasir         User            @relation(fields: [kasirId], references: [id])
   itemTransaksi ItemTransaksi[]
+  piutang       Piutang?
   
   @@index([tanggal])
   @@index([kasirId])
@@ -389,4 +394,97 @@ model FinancialAuditLog {
   @@index([changedBy])
   @@index([changedAt])
   @@map("financial_audit_log")
+}
+
+// Debt Management (Hutang - Accounts Payable)
+model Hutang {
+  id                String   @id @default(cuid())
+  nomorHutang       String   @unique
+  tanggalHutang     DateTime @default(now())
+  transaksiMasukId  String?  @unique
+  sumberHutang      String   // Supplier/Sumber barang
+  deskripsi         String   // Deskripsi barang yang dibeli
+  totalHutang       Float
+  totalBayar        Float    @default(0)
+  sisaHutang        Float
+  status            StatusHutangPiutang @default(BELUM_LUNAS)
+  jatuhTempo        DateTime?
+  catatan           String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  pembayaranHutang  PembayaranHutang[]
+  
+  @@index([tanggalHutang])
+  @@index([status])
+  @@index([transaksiMasukId])
+  @@map("hutang")
+}
+
+// Receivables Management (Piutang - Accounts Receivable)
+model Piutang {
+  id                String   @id @default(cuid())
+  nomorPiutang      String   @unique
+  tanggalPiutang    DateTime @default(now())
+  transaksiKasirId  String?  @unique
+  namaPelanggan     String
+  nomorHp           String?
+  alamat            String?
+  deskripsi         String   // Deskripsi barang yang dijual
+  totalPiutang      Float
+  totalBayar        Float    @default(0)
+  sisaPiutang       Float
+  status            StatusHutangPiutang @default(BELUM_LUNAS)
+  jatuhTempo        DateTime?
+  catatan           String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  pembayaranPiutang PembayaranPiutang[]
+  transaksiKasir    TransaksiKasir? @relation(fields: [transaksiKasirId], references: [id])
+  
+  @@index([tanggalPiutang])
+  @@index([status])
+  @@index([transaksiKasirId])
+  @@map("piutang")
+}
+
+// Payment History for Hutang
+model PembayaranHutang {
+  id              String   @id @default(cuid())
+  hutangId        String
+  tanggalBayar    DateTime @default(now())
+  jumlahBayar     Float
+  metodePembayaran String  @default("tunai")
+  catatan         String?
+  createdAt       DateTime @default(now())
+  
+  hutang          Hutang   @relation(fields: [hutangId], references: [id])
+  
+  @@index([hutangId])
+  @@index([tanggalBayar])
+  @@map("pembayaran_hutang")
+}
+
+// Payment History for Piutang
+model PembayaranPiutang {
+  id              String   @id @default(cuid())
+  piutangId       String
+  tanggalBayar    DateTime @default(now())
+  jumlahBayar     Float
+  metodePembayaran String  @default("tunai")
+  catatan         String?
+  createdAt       DateTime @default(now())
+  
+  piutang         Piutang  @relation(fields: [piutangId], references: [id])
+  
+  @@index([piutangId])
+  @@index([tanggalBayar])
+  @@map("pembayaran_piutang")
+}
+
+enum StatusHutangPiutang {
+  BELUM_LUNAS
+  LUNAS
+  JATUH_TEMPO
 }

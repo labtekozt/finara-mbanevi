@@ -22,6 +22,7 @@ import {
   BookOpen,
   Scale,
   Lock,
+  DollarSign,
 } from "lucide-react";
 
 import {
@@ -81,6 +82,12 @@ const menuItems = [
     href: "/retur-penjualan",
     icon: RotateCcw,
     permission: "canAccessKasir" as const,
+  },
+  {
+    title: "Hutang & Piutang",
+    href: "/hutang-piutang",
+    icon: DollarSign,
+    permission: "canAccessAkuntansi" as const,
   },
   {
     title: "Akuntansi",

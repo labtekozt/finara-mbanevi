@@ -7,6 +7,7 @@ import { TabsContent } from "@/components/ui/tabs";
 import { StyledTabs, StyledTabsList, StyledTabsTrigger } from "@/components/ui/styled-tabs";
 import {
   Package,
+  TrendingUp,
   TrendingDown,
   History,
   ArrowUpDown,
@@ -19,6 +20,7 @@ import {
   BarangKeluarDialog,
 } from "@/components/inventory";
 import { DaftarBarangTab } from "./tabs/DaftarBarangTab";
+import { HistoryBarangMasukTab } from "./tabs/HistoryBarangMasukTab";
 import { HistoryBarangKeluarTab } from "./tabs/HistoryBarangKeluarTab";
 import { HistoryPenjualanTab } from "./tabs/HistoryPenjualanTab";
 
@@ -44,6 +46,19 @@ interface Lokasi {
   id: string;
   namaLokasi: string;
   alamat?: string;
+}
+
+interface TransaksiMasuk {
+  id: string;
+  nomorTransaksi: string;
+  tanggal: string;
+  qty: number;
+  hargaBeli: number;
+  totalNilai: number;
+  sumber: string;
+  keterangan?: string;
+  barang: Barang;
+  lokasi: Lokasi;
 }
 
 interface TransaksiKeluar {
@@ -85,6 +100,7 @@ interface TransaksiKasir {
 export default function InventarisPage() {
   const [barang, setBarang] = useState<Barang[]>([]);
   const [lokasi, setLokasi] = useState<Lokasi[]>([]);
+  const [transaksiMasuk, setTransaksiMasuk] = useState<TransaksiMasuk[]>([]);
   const [transaksiKeluar, setTransaksiKeluar] = useState<TransaksiKeluar[]>([]);
   const [transaksiKasir, setTransaksiKasir] = useState<TransaksiKasir[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +118,10 @@ export default function InventarisPage() {
   const [endDateKeluar, setEndDateKeluar] = useState("");
   const [startDateKasir, setStartDateKasir] = useState("");
   const [endDateKasir, setEndDateKasir] = useState("");
+  const [sortColumnMasuk, setSortColumnMasuk] = useState<string>("tanggal");
+  const [sortDirectionMasuk, setSortDirectionMasuk] = useState<"asc" | "desc">(
+    "desc",
+  );
   const [sortColumnKeluar, setSortColumnKeluar] = useState<string>("tanggal");
   const [sortDirectionKeluar, setSortDirectionKeluar] = useState<
     "asc" | "desc"
@@ -113,6 +133,7 @@ export default function InventarisPage() {
 
   // Pagination states
   const [currentPageBarang, setCurrentPageBarang] = useState(1);
+  const [currentPageMasuk, setCurrentPageMasuk] = useState(1);
   const [currentPageKeluar, setCurrentPageKeluar] = useState(1);
   const [currentPageKasir, setCurrentPageKasir] = useState(1);
   const itemsPerPage = 10;
@@ -172,6 +193,10 @@ export default function InventarisPage() {
     sortColumn,
     sortDirection,
   ]);
+
+  useEffect(() => {
+    setCurrentPageMasuk(1);
+  }, [sortColumnMasuk, sortDirectionMasuk]);
 
   useEffect(() => {
     setCurrentPageKeluar(1);
@@ -271,6 +296,31 @@ export default function InventarisPage() {
     endDateKeluar,
   ]);
 
+  const sortedTransaksiMasuk = useMemo(() => {
+    return [...transaksiMasuk].sort((a, b) => {
+      let aValue: any = a[sortColumnMasuk as keyof TransaksiMasuk];
+      let bValue: any = b[sortColumnMasuk as keyof TransaksiMasuk];
+
+      if (sortColumnMasuk === "tanggal") {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      } else if (sortColumnMasuk === "barang") {
+        aValue = a.barang.nama.toLowerCase();
+        bValue = b.barang.nama.toLowerCase();
+      } else if (sortColumnMasuk === "lokasi") {
+        aValue = a.lokasi.namaLokasi.toLowerCase();
+        bValue = b.lokasi.namaLokasi.toLowerCase();
+      } else if (typeof aValue === "string") {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      if (aValue < bValue) return sortDirectionMasuk === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortDirectionMasuk === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [transaksiMasuk, sortColumnMasuk, sortDirectionMasuk]);
+
   const sortedTransaksiKasir = useMemo(() => {
     let filtered = [...transaksiKasir];
 
@@ -361,6 +411,15 @@ export default function InventarisPage() {
 
   const totalPagesBarang = Math.ceil(sortedBarang.length / itemsPerPage);
 
+  // Pagination untuk Transaksi Masuk
+  const paginatedTransaksiMasuk = useMemo(() => {
+    const startIndex = (currentPageMasuk - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return sortedTransaksiMasuk.slice(startIndex, endIndex);
+  }, [sortedTransaksiMasuk, currentPageMasuk, itemsPerPage]);
+
+  const totalPagesMasuk = Math.ceil(sortedTransaksiMasuk.length / itemsPerPage);
+
   // Pagination untuk Transaksi Keluar
   const paginatedTransaksiKeluar = useMemo(() => {
     const startIndex = (currentPageKeluar - 1) * itemsPerPage;
@@ -407,6 +466,15 @@ export default function InventarisPage() {
     }
   }
 
+  function handleSortMasuk(column: string) {
+    if (sortColumnMasuk === column) {
+      setSortDirectionMasuk(sortDirectionMasuk === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumnMasuk(column);
+      setSortDirectionMasuk("desc");
+    }
+  }
+
   function getSortIcon(column: string) {
     if (sortColumn !== column) return <ArrowUpDown className="ml-2 h-4 w-4" />;
     return sortDirection === "asc" ? (
@@ -420,6 +488,16 @@ export default function InventarisPage() {
     if (sortColumnKeluar !== column)
       return <ArrowUpDown className="ml-2 h-4 w-4" />;
     return sortDirectionKeluar === "asc" ? (
+      <ArrowUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-2 h-4 w-4" />
+    );
+  }
+
+  function getSortIconMasuk(column: string) {
+    if (sortColumnMasuk !== column)
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    return sortDirectionMasuk === "asc" ? (
       <ArrowUp className="ml-2 h-4 w-4" />
     ) : (
       <ArrowDown className="ml-2 h-4 w-4" />
@@ -455,20 +533,23 @@ export default function InventarisPage() {
       if (lokasiFilter && lokasiFilter !== "ALL")
         params.append("lokasiId", lokasiFilter);
 
-      const [barangRes, lokasiRes, keluarRes, kasirRes] = await Promise.all([
+      const [barangRes, lokasiRes, masukRes, keluarRes, kasirRes] = await Promise.all([
         fetch(`/api/barang?${params}`),
         fetch("/api/lokasi"),
+        fetch("/api/transaksi-masuk"),
         fetch("/api/transaksi-keluar"),
         fetch("/api/transaksi-kasir"),
       ]);
 
       const barangData = await barangRes.json();
       const lokasiData = await lokasiRes.json();
+      const masukData = await masukRes.json();
       const keluarData = await keluarRes.json();
       const kasirData = await kasirRes.json();
 
       setBarang(barangData);
       setLokasi(lokasiData);
+      setTransaksiMasuk(masukData);
       setTransaksiKeluar(keluarData);
       setTransaksiKasir(kasirData);
     } catch (error) {
@@ -834,6 +915,10 @@ export default function InventarisPage() {
               <Package className="mr-2 h-4 w-4" />
               Daftar Barang
             </StyledTabsTrigger>
+            <StyledTabsTrigger value="masuk">
+              <TrendingUp className="mr-2 h-4 w-4" />
+              History Barang Masuk
+            </StyledTabsTrigger>
             <StyledTabsTrigger value="history">
               <History className="mr-2 h-4 w-4" />
               History Barang Keluar
@@ -867,6 +952,20 @@ export default function InventarisPage() {
               currentPage={currentPageBarang}
               totalPages={totalPagesBarang}
               setCurrentPage={setCurrentPageBarang}
+              PaginationComponent={Pagination}
+            />
+          </TabsContent>
+
+          {/* Tab History Barang Masuk */}
+          <TabsContent value="masuk">
+            <HistoryBarangMasukTab
+              transaksiMasuk={sortedTransaksiMasuk}
+              paginatedTransaksiMasuk={paginatedTransaksiMasuk}
+              handleSort={handleSortMasuk}
+              getSortIcon={getSortIconMasuk}
+              currentPage={currentPageMasuk}
+              totalPages={totalPagesMasuk}
+              setCurrentPage={setCurrentPageMasuk}
               PaginationComponent={Pagination}
             />
           </TabsContent>

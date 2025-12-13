@@ -82,6 +82,13 @@ export function TambahEditBarangDialog({
     alamat: "",
   });
   const [lokasiLoading, setLokasiLoading] = useState(false);
+  const [sumberMode, setSumberMode] = useState<"select" | "custom">("select");
+  const [customSumber, setCustomSumber] = useState("");
+
+  // Daftar sumber barang default
+  const sumberBarangList = [
+    "Sales muffin",
+  ];
 
   const handleCreateLokasi = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,18 +222,72 @@ export function TambahEditBarangDialog({
 
                 <div className="space-y-2">
                   <Label htmlFor="sumber-tambah">Sumber Barang *</Label>
-                  <Input
-                    id="sumber-tambah"
-                    value={formTambahStok.sumber}
-                    onChange={(e) =>
-                      setFormTambahStok({
-                        ...formTambahStok,
-                        sumber: e.target.value,
-                      })
-                    }
-                    placeholder="Contoh: Supplier A, Pembelian Lokal, Transfer Cabang"
-                    required
-                  />
+                  {sumberMode === "select" ? (
+                    <Select
+                      value={
+                        formTambahStok.sumber &&
+                        sumberBarangList.includes(formTambahStok.sumber)
+                          ? formTambahStok.sumber
+                          : "CUSTOM"
+                      }
+                      onValueChange={(value: string) => {
+                        if (value === "CUSTOM") {
+                          setSumberMode("custom");
+                          setCustomSumber("");
+                          setFormTambahStok({
+                            ...formTambahStok,
+                            sumber: "",
+                          });
+                        } else {
+                          setFormTambahStok({
+                            ...formTambahStok,
+                            sumber: value,
+                          });
+                        }
+                      }}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih sumber barang" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sumberBarangList.map((sumber) => (
+                          <SelectItem key={sumber} value={sumber}>
+                            {sumber}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="CUSTOM">
+                          ➕ Tambah Sumber Lain
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input
+                        id="sumber-tambah"
+                        value={customSumber}
+                        onChange={(e) => {
+                          setCustomSumber(e.target.value);
+                          setFormTambahStok({
+                            ...formTambahStok,
+                            sumber: e.target.value,
+                          });
+                        }}
+                        placeholder="Masukkan nama sumber barang"
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setSumberMode("select");
+                          setCustomSumber("");
+                        }}
+                      >
+                        Batal
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">

@@ -28,6 +28,10 @@ const transaksiSchema = z.object({
   jumlahBayar: z.number(),
   kembalian: z.number(),
   catatan: z.string().optional(),
+  // Data pelanggan untuk kredit
+  namaPelanggan: z.string().optional(),
+  nomorHpPelanggan: z.string().optional(),
+  alamatPelanggan: z.string().optional(),
 });
 
 // GET - List transactions with filters
@@ -130,6 +134,9 @@ export async function POST(request: NextRequest) {
           kembalian: validatedData.kembalian,
           kasirId: session.user.id,
           catatan: validatedData.catatan,
+          namaPelanggan: validatedData.namaPelanggan,
+          nomorHpPelanggan: validatedData.nomorHpPelanggan,
+          alamatPelanggan: validatedData.alamatPelanggan,
         },
       });
 
@@ -168,6 +175,28 @@ export async function POST(request: NextRequest) {
           description: `Transaksi kasir ${newTransaksi.nomorTransaksi} - Total: Rp ${validatedData.total.toLocaleString("id-ID")}`,
         },
       });
+
+      // Create Piutang if payment method is kredit
+      if (validatedData.metodePembayaran === "kredit") {
+        const deskripsi = validatedData.items
+          .map((item) => `${item.namaBarang} x${item.qty}`)
+          .join(", ");
+
+        await tx.piutang.create({
+          data: {
+            nomorPiutang: `PTG-${Date.now()}`,
+            transaksiKasirId: newTransaksi.id,
+            namaPelanggan: validatedData.namaPelanggan || "Pelanggan",
+            nomorHp: validatedData.nomorHpPelanggan,
+            alamat: validatedData.alamatPelanggan,
+            deskripsi: `Penjualan: ${deskripsi}`,
+            totalPiutang: validatedData.total,
+            totalBayar: 0,
+            sisaPiutang: validatedData.total,
+            status: "BELUM_LUNAS",
+          },
+        });
+      }
 
       return newTransaksi;
     });

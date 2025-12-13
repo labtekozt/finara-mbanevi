@@ -76,6 +76,12 @@ export default function KasirPage() {
   const [cartMinimized, setCartMinimized] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("default");
+  // Data pelanggan untuk kredit
+  const [dataPelanggan, setDataPelanggan] = useState({
+    nama: "",
+    nomorHp: "",
+    alamat: "",
+  });
 
   // Calculations
   const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
@@ -115,6 +121,17 @@ export default function KasirPage() {
   useEffect(() => {
     fetchBarang();
   }, []);
+
+  // Auto-set jumlah bayar when payment method is transfer or kredit
+  useEffect(() => {
+    if (
+      (metodePembayaran === "transfer" || metodePembayaran === "kredit") &&
+      cart.length > 0
+    ) {
+      setJumlahBayar(total);
+      setJumlahBayarDisplay(formatRupiah(total));
+    }
+  }, [metodePembayaran, total, cart.length]);
 
   async function fetchBarang() {
     try {
@@ -214,9 +231,16 @@ export default function KasirPage() {
       return;
     }
 
-    if (jumlahBayar < total) {
+    if (metodePembayaran === "tunai" && jumlahBayar < total) {
       toast.error("Jumlah bayar kurang dari total");
       return;
+    }
+
+    if (metodePembayaran === "kredit") {
+      if (!dataPelanggan.nama.trim()) {
+        toast.error("Nama pelanggan harus diisi untuk transaksi kredit");
+        return;
+      }
     }
 
     setConfirmPaymentDialog(true);
@@ -244,6 +268,13 @@ export default function KasirPage() {
           metodePembayaran,
           jumlahBayar,
           kembalian,
+          // Data pelanggan untuk kredit
+          namaPelanggan:
+            metodePembayaran === "kredit" ? dataPelanggan.nama : null,
+          nomorHpPelanggan:
+            metodePembayaran === "kredit" ? dataPelanggan.nomorHp : null,
+          alamatPelanggan:
+            metodePembayaran === "kredit" ? dataPelanggan.alamat : null,
         }),
       });
 
@@ -268,6 +299,8 @@ export default function KasirPage() {
       setCart([]);
       setJumlahBayar(0);
       setJumlahBayarDisplay("");
+      setDataPelanggan({ nama: "", nomorHp: "", alamat: "" });
+      setMetodePembayaran("tunai");
       fetchBarang(); // Refresh stock
       toast.success("Transaksi berhasil!");
     } catch (error: any) {
@@ -653,28 +686,117 @@ export default function KasirPage() {
             <Card>
               <CardContent className="flex-1 flex flex-col">
                 {cart.length > 0 && (
-                  <div className="space-y-2">
-                    <Label htmlFor="bayar">Jumlah Bayar</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-3 text-sm text-muted-foreground">
-                        Rp
-                      </span>
-                      <Input
-                        id="bayar"
-                        type="text"
-                        inputMode="numeric"
-                        value={jumlahBayarDisplay}
-                        onChange={(e) =>
-                          handleJumlahBayarChange(e.target.value)
-                        }
-                        placeholder="0"
-                        className="pl-10 text-2xl"
-                      />
+                  <div className="space-y-4">
+                    {/* Tipe Pembayaran */}
+                    <div className="space-y-2">
+                      <Label htmlFor="tipe-pembayaran">Tipe Pembayaran</Label>
+                      <Select
+                        value={metodePembayaran}
+                        onValueChange={setMetodePembayaran}
+                      >
+                        <SelectTrigger id="tipe-pembayaran">
+                          <SelectValue placeholder="Pilih tipe pembayaran" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="tunai">Tunai</SelectItem>
+                          <SelectItem value="transfer">Transfer</SelectItem>
+                          <SelectItem value="kredit">Kredit</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Form Data Pelanggan untuk Kredit */}
+                    {metodePembayaran === "kredit" && (
+                      <div className="space-y-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="text-sm font-medium text-yellow-800">
+                          Data Pelanggan Kredit
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="nama-pelanggan">
+                            Nama Pelanggan *
+                          </Label>
+                          <Input
+                            id="nama-pelanggan"
+                            value={dataPelanggan.nama}
+                            onChange={(e) =>
+                              setDataPelanggan({
+                                ...dataPelanggan,
+                                nama: e.target.value,
+                              })
+                            }
+                            placeholder="Nama lengkap pelanggan"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="nomor-hp">Nomor HP</Label>
+                          <Input
+                            id="nomor-hp"
+                            value={dataPelanggan.nomorHp}
+                            onChange={(e) =>
+                              setDataPelanggan({
+                                ...dataPelanggan,
+                                nomorHp: e.target.value,
+                              })
+                            }
+                            placeholder="08xxxxxxxxxx"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="alamat">Alamat</Label>
+                          <Input
+                            id="alamat"
+                            value={dataPelanggan.alamat}
+                            onChange={(e) =>
+                              setDataPelanggan({
+                                ...dataPelanggan,
+                                alamat: e.target.value,
+                              })
+                            }
+                            placeholder="Alamat lengkap"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Jumlah Bayar */}
+                    <div className="space-y-2">
+                      <Label htmlFor="bayar">Jumlah Bayar</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-3 text-sm text-muted-foreground">
+                          Rp
+                        </span>
+                        <Input
+                          id="bayar"
+                          type="text"
+                          inputMode="numeric"
+                          value={jumlahBayarDisplay}
+                          onChange={(e) =>
+                            handleJumlahBayarChange(e.target.value)
+                          }
+                          placeholder="0"
+                          className="pl-10 text-2xl"
+                          disabled={
+                            metodePembayaran === "transfer" ||
+                            metodePembayaran === "kredit"
+                          }
+                        />
+                      </div>
+                      {metodePembayaran === "transfer" && (
+                        <p className="text-xs text-muted-foreground">
+                          Jumlah bayar otomatis sesuai total pembayaran
+                        </p>
+                      )}
+                      {metodePembayaran === "kredit" && (
+                        <p className="text-xs text-yellow-700">
+                          Transaksi kredit akan masuk ke daftar piutang
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
 
-                {jumlahBayar > 0 && (
+                {jumlahBayar > 0 && metodePembayaran === "tunai" && (
                   <div className="flex flex-col justify-between text-sm mt-5">
                     <span>Kembalian:</span>
                     <span
@@ -692,7 +814,7 @@ export default function KasirPage() {
                 <Button
                   className="w-full mt-4"
                   onClick={openConfirmPayment}
-                  disabled={loading || cart.length === 0 || kembalian < 0}
+                  disabled={loading || cart.length === 0 || (metodePembayaran === "tunai" && kembalian < 0)}
                 >
                   <ShoppingCart className="mr-2 h-4 w-4" />
                   Bayar
@@ -756,6 +878,12 @@ export default function KasirPage() {
             {/* Payment Details */}
             <div className="space-y-2 p-4 bg-gray-50 rounded-lg">
               <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Tipe Pembayaran:</span>
+                <span className="font-bold text-lg capitalize">
+                  {metodePembayaran}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Total Belanja:</span>
                 <span className="font-bold text-lg">
                   Rp {total.toLocaleString("id-ID")}
@@ -767,12 +895,14 @@ export default function KasirPage() {
                   Rp {jumlahBayar.toLocaleString("id-ID")}
                 </span>
               </div>
-              <div className="border-t pt-2 flex justify-between">
-                <span className="text-gray-600">Kembalian:</span>
-                <span className="font-bold text-xl text-green-600">
-                  Rp {kembalian.toLocaleString("id-ID")}
-                </span>
-              </div>
+              {metodePembayaran === "tunai" && (
+                <div className="border-t pt-2 flex justify-between">
+                  <span className="text-gray-600">Kembalian:</span>
+                  <span className="font-bold text-xl text-green-600">
+                    Rp {kembalian.toLocaleString("id-ID")}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2">
