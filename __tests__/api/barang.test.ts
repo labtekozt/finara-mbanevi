@@ -17,6 +17,7 @@ jest.mock("@/lib/auth-options", () => ({
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
+    $transaction: jest.fn((callback) => callback(prisma)),
     barang: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
@@ -24,8 +25,14 @@ jest.mock("@/lib/prisma", () => ({
       update: jest.fn(),
       delete: jest.fn(),
     },
+    transaksiMasuk: {
+      create: jest.fn(),
+    },
     activityLog: {
       create: jest.fn(),
+    },
+    user: {
+      findUnique: jest.fn(),
     },
   },
 }));
@@ -78,6 +85,10 @@ describe("Barang API", () => {
     (require("next-auth").getServerSession as jest.Mock).mockResolvedValue(
       mockSession,
     );
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: "user-123",
+      username: "testuser",
+    });
   });
 
   describe("GET /api/barang", () => {
@@ -126,6 +137,11 @@ describe("Barang API", () => {
         ...newItem,
       });
 
+      (prisma.transaksiMasuk.create as jest.Mock).mockResolvedValue({
+        id: "tm-1",
+        nomorTransaksi: "MSK-123",
+      });
+
       const req = new MockNextRequest(
         "POST",
         "http://localhost:3000/api/barang",
@@ -137,16 +153,21 @@ describe("Barang API", () => {
 
       expect(response.status).toBe(201);
       expect(prisma.barang.create).toHaveBeenCalledWith({
-        data: newItem,
+        data: expect.objectContaining({
+          ...newItem,
+          sku: expect.any(String),
+        }),
         include: { lokasi: true },
       });
 
       // Verify journal for initial stock
       expect(createJournalEntryForStockAddition).toHaveBeenCalledWith(
-        "INITIAL-item-new",
+        "tm-1",
         50000, // 10 * 5000
         "INTERNAL_ADJUSTMENT",
         mockSession.user.id,
+        undefined,
+        expect.anything(),
       );
     });
 
@@ -245,6 +266,7 @@ describe("Barang API", () => {
         25000, // 5 * 5000
         true, // isIncrease
         mockSession.user.id,
+        expect.anything(),
       );
     });
 

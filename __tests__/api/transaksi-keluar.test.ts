@@ -26,6 +26,9 @@ jest.mock("@/lib/prisma", () => ({
     activityLog: {
       create: jest.fn(),
     },
+    user: {
+      findUnique: jest.fn(),
+    },
   },
 }));
 
@@ -80,6 +83,10 @@ describe("Transaksi Keluar API", () => {
     (require("next-auth").getServerSession as jest.Mock).mockResolvedValue(
       mockSession,
     );
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: "user-123",
+      username: "testuser",
+    });
     (generateKeluarNumber as jest.Mock).mockReturnValue("TRX-OUT-123");
   });
 

@@ -5,8 +5,8 @@ import { NextRequest } from "next/server";
 import logger from "@/lib/logger";
 
 // Mock dependencies
-jest.mock("@/lib/prisma", () => ({
-  prisma: {
+jest.mock("@/lib/prisma", () => {
+  const mockPrisma = {
     barang: {
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -44,9 +44,16 @@ jest.mock("@/lib/prisma", () => ({
     hutang: {
       create: jest.fn(),
     },
-    $transaction: jest.fn((callback) => callback(prisma)),
-  },
-}));
+    user: {
+      findUnique: jest.fn(),
+    },
+    $transaction: jest.fn(),
+  };
+
+  mockPrisma.$transaction.mockImplementation((callback) => callback(mockPrisma));
+
+  return { prisma: mockPrisma };
+});
 
 jest.mock("next-auth", () => ({
   getServerSession: jest.fn(() =>
@@ -103,6 +110,11 @@ describe("E2E Integration: Kasir & Inventory with Accounting Cycle", () => {
     (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue(
       mockPeriod,
     );
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: mockUserId,
+      username: "testuser",
+      role: "ADMIN",
+    });
     (prisma.barang.findUnique as jest.Mock).mockResolvedValue(mockBarang);
     (prisma.transaksiKasir.findUnique as jest.Mock).mockResolvedValue({
       id: "trx-123",

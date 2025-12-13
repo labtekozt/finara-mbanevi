@@ -11,9 +11,12 @@ jest.mock("@/lib/auth-options", () => ({
   authOptions: {},
 }));
 
-jest.mock("@/lib/prisma", () => ({
-  prisma: {
-    $transaction: jest.fn((callback) => callback(prisma)),
+jest.mock("@/lib/prisma", () => {
+  const mockPrisma = {
+    $transaction: jest.fn(),
+    user: {
+      findUnique: jest.fn(),
+    },
     hutang: {
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -21,8 +24,12 @@ jest.mock("@/lib/prisma", () => ({
     pembayaranHutang: {
       create: jest.fn(),
     },
-  },
-}));
+  };
+
+  mockPrisma.$transaction.mockImplementation((callback) => callback(mockPrisma));
+
+  return { prisma: mockPrisma };
+});
 
 jest.mock("@/lib/accounting-utils", () => ({
   createJournalEntryForDebtPayment: jest.fn(),
@@ -67,6 +74,11 @@ describe("Hutang Payment API", () => {
     (require("next-auth").getServerSession as jest.Mock).mockResolvedValue(
       mockSession,
     );
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: "user-123",
+      username: "admin",
+      role: "ADMIN",
+    });
   });
 
   it("should process payment successfully", async () => {

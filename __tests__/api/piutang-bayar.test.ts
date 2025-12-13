@@ -57,6 +57,9 @@ jest.mock("@/lib/prisma", () => ({
     pembayaranPiutang: {
       create: jest.fn(),
     },
+    user: {
+      findUnique: jest.fn(),
+    },
   },
 }));
 
@@ -73,6 +76,10 @@ describe("API: /api/piutang/[id]/bayar", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getServerSession as jest.Mock).mockResolvedValue(mockSession);
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: "user-123",
+      username: "testuser",
+    });
   });
 
   test("should reject unauthorized requests", async () => {

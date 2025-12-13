@@ -2,6 +2,7 @@ import { GET } from "@/app/api/akuntansi/trial-balance/route";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 // Mock dependencies
 jest.mock("@/lib/prisma", () => ({
@@ -20,6 +21,9 @@ jest.mock("@/lib/prisma", () => ({
     },
     financialAuditLog: {
       create: jest.fn(),
+    },
+    user: {
+      findUnique: jest.fn(),
     },
   },
 }));
@@ -45,10 +49,7 @@ jest.mock("@/lib/financial-validator", () => ({
 }));
 
 // Mock Decimal
-const mockDecimal = (val: number) => ({
-  toNumber: () => val,
-  toString: () => val.toString(),
-});
+const mockDecimal = (val: number) => new Prisma.Decimal(val);
 
 // Mock Request
 class MockNextRequest {
@@ -69,6 +70,10 @@ describe("API Akuntansi Trial Balance", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getServerSession as jest.Mock).mockResolvedValue(mockSession);
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: "user-1",
+      username: "testuser",
+    });
     (require("@/lib/permissions").hasPermission as jest.Mock).mockReturnValue(
       true,
     );

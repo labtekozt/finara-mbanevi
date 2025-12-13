@@ -38,9 +38,19 @@ jobs:
             echo "📦 Installing dependencies..."
             npm ci
 
+            # Generate Prisma Client
+            echo "🗄️ Generating Prisma Client..."
+            npm run db:generate
+
+            # Run Tests
+            echo "🧪 Running tests..."
+            npm test
+
             # Build application
             # Note: This runs on the VPS. Ensure the VPS has enough resources.
+            # Increase Node.js memory limit to prevent OOM during build
             echo "🏗️ Building application..."
+            export NODE_OPTIONS="--max-old-space-size=4096"
             npm run build
 
             # Restart PM2 process

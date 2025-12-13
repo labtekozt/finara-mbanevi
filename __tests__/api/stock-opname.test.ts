@@ -2,6 +2,7 @@ import { GET, POST } from "@/app/api/stock-opname/route";
 import { prisma } from "@/lib/prisma";
 import { createJournalEntryForStockAdjustment } from "@/lib/accounting-utils";
 import { generateTransactionNumber } from "@/lib/transaction-number";
+import { Prisma } from "@prisma/client";
 
 // Mock dependencies
 jest.mock("next-auth", () => ({
@@ -25,6 +26,9 @@ jest.mock("@/lib/prisma", () => ({
     },
     activityLog: {
       create: jest.fn(),
+    },
+    user: {
+      findUnique: jest.fn(),
     },
   },
 }));
@@ -80,6 +84,10 @@ describe("Stock Opname API", () => {
     (require("next-auth").getServerSession as jest.Mock).mockResolvedValue(
       mockSession,
     );
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: "user-123",
+      username: "testuser",
+    });
     (generateTransactionNumber as jest.Mock).mockReturnValue("OPN-123");
   });
 
@@ -97,7 +105,7 @@ describe("Stock Opname API", () => {
         id: "item-1",
         nama: "Item 1",
         stok: 10,
-        hargaBeli: { toNumber: () => 5000 },
+        hargaBeli: new Prisma.Decimal(5000),
       };
 
       (prisma.barang.findUnique as jest.Mock).mockResolvedValue(mockBarang);
@@ -141,14 +149,14 @@ describe("Stock Opname API", () => {
         stokSistem: 10,
         stokFisik: 8, // Decrease by 2
         lokasiId: "loc-1",
-        keterangan: "Lost items",
+        keterangan: "Missing items",
       };
 
       const mockBarang = {
         id: "item-1",
         nama: "Item 1",
         stok: 10,
-        hargaBeli: { toNumber: () => 5000 },
+        hargaBeli: new Prisma.Decimal(5000),
       };
 
       (prisma.barang.findUnique as jest.Mock).mockResolvedValue(mockBarang);
