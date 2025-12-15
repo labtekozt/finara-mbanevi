@@ -143,6 +143,19 @@ const menuItems = [
       },
     ],
   },
+  {
+    title: "Pengaturan",
+    href: "/settings",
+    icon: Settings,
+    permission: "canAccessTransaksi" as const,
+    submenu: [
+      {
+        title: "Pengaturan Toko",
+        href: "/settings/toko",
+        icon: Settings,
+      },
+    ],
+  },
 ];
 
 export function AppSidebar() {

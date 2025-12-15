@@ -51,6 +51,7 @@ import { toast } from "sonner";
 import { CartItem } from "@/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { printReceipt, formatReceiptData } from "@/lib/receipt-printer";
 
 interface Barang {
   id: string;
@@ -83,6 +84,8 @@ export default function KasirPage() {
   const [cartMinimized, setCartMinimized] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("default");
+  // Store settings for receipt
+  const [storeSettings, setStoreSettings] = useState<any>(null);
   // Data pelanggan untuk kredit
   const [dataPelanggan, setDataPelanggan] = useState({
     nama: "",
@@ -134,6 +137,7 @@ export default function KasirPage() {
 
   useEffect(() => {
     fetchBarang();
+    fetchStoreSettings();
   }, []);
 
   // Auto-set jumlah bayar when payment method is transfer or kredit
@@ -154,6 +158,26 @@ export default function KasirPage() {
       setBarang(data);
     } catch (error) {
       toast.error("Gagal memuat data barang");
+    }
+  }
+
+  async function fetchStoreSettings() {
+    try {
+      const response = await fetch("/api/settings/toko");
+      const data = await response.json();
+      setStoreSettings(data);
+    } catch (error) {
+      console.error("Failed to fetch store settings:", error);
+      // Use default settings if fetch fails
+      setStoreSettings({
+        namaToko: "Toko Anda",
+        alamat: "",
+        nomorTelepon: "",
+        tagline: "",
+        footerText: "Terima kasih atas kunjungan Anda",
+        pajak: 0,
+        includePajak: false,
+      });
     }
   }
 
@@ -341,6 +365,21 @@ export default function KasirPage() {
       toast.error(error.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  function handlePrintReceipt() {
+    if (!lastTransaction || !storeSettings) {
+      toast.error("Data transaksi atau pengaturan toko tidak tersedia");
+      return;
+    }
+
+    try {
+      const receiptData = formatReceiptData(lastTransaction, storeSettings);
+      printReceipt(receiptData, storeSettings);
+      toast.success("Struk sedang dicetak...");
+    } catch (error: any) {
+      toast.error(error.message || "Gagal mencetak struk");
     }
   }
 
@@ -1255,10 +1294,19 @@ export default function KasirPage() {
                 </div>
               </div>
               <div className="flex gap-2 w-fit justify-end">
-                <Button variant="outline" className="w-fit">
+                <Button
+                  variant="outline"
+                  className="w-fit"
+                  onClick={() => setReceiptDialog(false)}
+                >
                   Tutup
                 </Button>
-                <Button variant="default" className="w-fit">
+                <Button
+                  variant="default"
+                  className="w-fit"
+                  onClick={() => handlePrintReceipt()}
+                >
+                  <Receipt className="mr-2 h-4 w-4" />
                   Cetak Struk
                 </Button>
               </div>

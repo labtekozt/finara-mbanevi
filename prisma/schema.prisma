@@ -490,3 +490,23 @@ enum StatusHutangPiutang {
   LUNAS
   JATUH_TEMPO
 }
+
+// Store Settings for Receipt Customization
+model SettingsToko {
+  id              String   @id @default(cuid())
+  namaToko        String
+  alamat          String?
+  nomorTelepon    String?
+  email           String?
+  website         String?
+  tagline         String?   // Motto/slogan toko
+  footerText      String?   // Teks di footer struk (e.g., "Terima kasih atas kunjungan Anda")
+  showLogo        Boolean  @default(false)
+  logoUrl         String?
+  pajak           Decimal  @default(0) @db.Decimal(5, 2) // Persentase pajak (e.g., 10.00 untuk 10%)
+  includePajak    Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("settings_toko")
+}
