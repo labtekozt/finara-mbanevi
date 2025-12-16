@@ -3,10 +3,10 @@
  *
  * Best practices for thermal receipt printing:
  * 1. Use monospace fonts for alignment
- * 2. Paper width: 58mm = ~32 characters at 12pt
+ * 2. Paper width: 50mm effective (58mm with margins) = ~28 characters
  * 3. Avoid colors (thermal printers are monochrome)
  * 4. Use CSS print media queries
- * 5. Keep font size readable (10-12pt)
+ * 5. Keep font size readable (9-11pt)
  */
 
 export interface ReceiptData {
@@ -93,8 +93,8 @@ export function generateReceiptHTML(
     }).format(new Date(date));
   };
 
-  // Helper to pad text for alignment (58mm = ~32 chars)
-  const LINE_WIDTH = 32;
+  // Helper to pad text for alignment (50mm with margins = ~28 chars)
+  const LINE_WIDTH = 28;
   const padLine = (left: string, right: string) => {
     const spaces = LINE_WIDTH - left.length - right.length;
     return left + " ".repeat(Math.max(0, spaces)) + right;
@@ -113,7 +113,7 @@ export function generateReceiptHTML(
   <style>
     @media print {
       @page {
-        size: 58mm auto;
+        size: 50mm auto;
         margin: 0;
       }
       
@@ -129,12 +129,12 @@ export function generateReceiptHTML(
     
     body {
       font-family: 'Courier New', Courier, monospace;
-      font-size: 11pt;
+      font-size: 10pt;
       font-weight: 600;
       line-height: 1.3;
-      width: 58mm;
+      width: 50mm;
       margin: 0 auto;
-      padding: 5mm 3mm;
+      padding: 4mm 2mm;
       background: white;
       color: black;
       -webkit-print-color-adjust: exact;
@@ -154,22 +154,22 @@ export function generateReceiptHTML(
     }
     
     .large {
-      font-size: 13pt;
+      font-size: 12pt;
       font-weight: 700;
     }
     
     .small {
-      font-size: 9pt;
-      font-weight: 600;
-    }
-    
-    .x-small {
       font-size: 8pt;
       font-weight: 600;
     }
     
-    .xx-small {
+    .x-small {
       font-size: 7pt;
+      font-weight: 600;
+    }
+    
+    .xx-small {
+      font-size: 6pt;
       font-weight: 600;
     }
     
@@ -234,21 +234,21 @@ export function generateReceiptHTML(
     }
     
     .grand-total {
-      font-size: 12pt;
+      font-size: 11pt;
       font-weight: bold;
       margin: 2mm 0;
     }
     
     .grand-total .amount-cell {
-      font-size: 11pt;
+      font-size: 10pt;
     }
     
     .grand-total .x-small {
-      font-size: 9pt;
+      font-size: 8pt;
     }
     
     .grand-total .xx-small {
-      font-size: 8pt;
+      font-size: 7pt;
     }
     
     .footer {
