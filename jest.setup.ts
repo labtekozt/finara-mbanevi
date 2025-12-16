@@ -7,16 +7,22 @@ Object.assign(global, { TextDecoder, TextEncoder });
 if (typeof global.Request === "undefined") {
   // @ts-ignore
   global.Request = class Request {
+    private _url: string;
+    method: string;
+    headers: Headers;
+    body: any;
+    
     constructor(input: any, init: any) {
-      this.url = input;
+      this._url = input;
       this.method = init?.method || "GET";
       this.headers = new Headers(init?.headers);
       this.body = init?.body;
     }
-    url: string;
-    method: string;
-    headers: Headers;
-    body: any;
+    
+    get url() {
+      return this._url;
+    }
+    
     async json() {
       return JSON.parse(this.body);
     }

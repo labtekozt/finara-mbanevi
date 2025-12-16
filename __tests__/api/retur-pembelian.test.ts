@@ -204,6 +204,7 @@ describe("Retur Pembelian API", () => {
         sumber: "Hutang Supplier A", // Not "Tunai" or "Cash"
         lokasiId: "loc-1",
         barang: { nama: "Item 1", satuan: "pcs" },
+        hutang: { id: "hutang-1", status: "BELUM_LUNAS" }, // Indicates credit purchase
       };
 
       const returnData = {
