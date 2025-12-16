@@ -241,7 +241,6 @@ export interface CashFlowEntry {
 export interface CashFlowData {
   startDate: string;
   endDate: string;
-  saldoAwal: number;
   saldoAkhir: number;
   totalPemasukan: number;
   totalPengeluaran: number;

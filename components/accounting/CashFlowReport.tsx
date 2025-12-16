@@ -132,26 +132,25 @@ export function CashFlowReport({ className }: CashFlowReportProps) {
     // Summary boxes
     let yPos = 50;
     pdf.setFontSize(12);
-    pdf.text(`Saldo Awal: ${formatCurrency(data.saldoAwal)}`, 20, yPos);
     pdf.text(
       `Total Pemasukan: ${formatCurrency(data.totalPemasukan)}`,
       20,
-      yPos + 8,
+      yPos,
     );
     pdf.text(
       `Total Pengeluaran: ${formatCurrency(data.totalPengeluaran)}`,
       20,
-      yPos + 16,
+      yPos + 8,
     );
     pdf.text(
       `Net Cash Flow: ${formatCurrency(data.netCashFlow)}`,
       20,
-      yPos + 24,
+      yPos + 16,
     );
-    pdf.text(`Saldo Akhir: ${formatCurrency(data.saldoAkhir)}`, 20, yPos + 32);
+    pdf.text(`Saldo Akhir: ${formatCurrency(data.saldoAkhir)}`, 20, yPos + 24);
 
     // Transactions table
-    yPos += 45;
+    yPos += 37;
     const tableData = data.entries.map((entry) => [
       formatDate(entry.tanggal),
       entry.deskripsi,
@@ -298,20 +297,7 @@ export function CashFlowReport({ className }: CashFlowReportProps) {
           {data && !loading && (
             <div className="space-y-6">
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Saldo Awal
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {formatCurrency(data.saldoAwal)}
-                    </div>
-                  </CardContent>
-                </Card>
-
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card className="border-green-200 bg-green-50">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-green-700 flex items-center gap-1">

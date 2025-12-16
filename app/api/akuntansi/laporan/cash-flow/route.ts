@@ -42,69 +42,7 @@ export async function GET(request: Request) {
       endDateTime,
     });
 
-    // Get saldo awal (balance before start date) from Kas account
-    const kasAccount = await prisma.akun.findFirst({
-      where: {
-        OR: [
-          { kode: { startsWith: "1-1" } }, // Cash accounts usually start with 1-1
-          { nama: { contains: "Kas", mode: "insensitive" } },
-        ],
-        tipe: "ASSET",
-        isActive: true,
-      },
-    });
-
-    let saldoAwal = 0;
-    if (kasAccount) {
-      // Get all transactions before start date
-      const entriesBeforeStart = await prisma.jurnalDetail.findMany({
-        where: {
-          akunId: kasAccount.id,
-          jurnal: {
-            tanggal: {
-              lt: startDateTime,
-            },
-            isPosted: true,
-          },
-        },
-        select: {
-          debit: true,
-          kredit: true,
-        },
-      });
-
-      // Calculate opening balance
-      for (const entry of entriesBeforeStart) {
-        saldoAwal += entry.debit.toNumber() - entry.kredit.toNumber();
-      }
-    }
-
-    // Get all cash transactions in the date range
-    const kasTransactions = kasAccount
-      ? await prisma.jurnalDetail.findMany({
-          where: {
-            akunId: kasAccount.id,
-            jurnal: {
-              tanggal: {
-                gte: startDateTime,
-                lte: endDateTime,
-              },
-              isPosted: true,
-            },
-          },
-          include: {
-            jurnal: true,
-            akun: true,
-          },
-          orderBy: {
-            jurnal: {
-              tanggal: "asc",
-            },
-          },
-        })
-      : [];
-
-    // Get transaksi kasir TUNAI only (exclude KREDIT)
+    // Get transaksi kasir TUNAI only (exclude kredit)
     const transaksiKasir = await prisma.transaksiKasir.findMany({
       where: {
         tanggal: {
@@ -112,7 +50,7 @@ export async function GET(request: Request) {
           lte: endDateTime,
         },
         metodePembayaran: {
-          not: "KREDIT",
+          not: "kredit",
         },
       },
       select: {
@@ -219,7 +157,7 @@ export async function GET(request: Request) {
 
     // Combine all transactions into entries
     const entries: any[] = [];
-    let currentBalance = saldoAwal;
+    let currentBalance = 0;
     let totalPemasukan = 0;
     let totalPengeluaran = 0;
 
@@ -352,7 +290,7 @@ export async function GET(request: Request) {
     );
 
     // Recalculate balance in sorted order
-    currentBalance = saldoAwal;
+    currentBalance = 0;
     entries.forEach((entry) => {
       if (entry.tipe === "in") {
         currentBalance += entry.jumlah;
@@ -368,7 +306,6 @@ export async function GET(request: Request) {
     const result: CashFlowData = {
       startDate: startDate,
       endDate: endDate,
-      saldoAwal,
       saldoAkhir: currentBalance,
       totalPemasukan,
       totalPengeluaran,

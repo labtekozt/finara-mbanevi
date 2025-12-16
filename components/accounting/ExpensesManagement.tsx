@@ -134,7 +134,7 @@ export function ExpensesManagement({ className }: ExpensesManagementProps) {
   };
 
   const totalExpenses = expenses.reduce(
-    (sum, expense) => sum + expense.jumlah,
+    (sum, expense) => sum + Number(expense.jumlah),
     0,
   );
 
