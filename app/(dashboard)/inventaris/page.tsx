@@ -97,6 +97,7 @@ export default function InventarisPage() {
     // New fields for initial stock purchase
     paymentMethod: "CASH" as "CASH" | "CREDIT",
     supplier: "",
+    supplierId: "",
     dueDate: "",
   });
 
@@ -105,7 +106,7 @@ export default function InventarisPage() {
     barangId: "",
     qty: 0,
     hargaBeli: 0,
-    sumber: "",
+    supplierId: undefined as string | undefined,
     lokasiId: "",
     keterangan: "",
     reason: "PURCHASE" as
@@ -633,6 +634,7 @@ export default function InventarisPage() {
       lokasiId: item.lokasiId,
       paymentMethod: "CASH",
       supplier: "",
+      supplierId: "",
       dueDate: "",
     });
     setDialogOpen(true);
@@ -660,13 +662,14 @@ export default function InventarisPage() {
       lokasiId: "",
       paymentMethod: "CASH",
       supplier: "",
+      supplierId: "",
       dueDate: "",
     });
     setFormTambahStok({
       barangId: "",
       qty: 0,
       hargaBeli: 0,
-      sumber: "",
+      supplierId: undefined,
       lokasiId: "",
       keterangan: "",
       reason: "PURCHASE",
@@ -711,7 +714,7 @@ export default function InventarisPage() {
         barangId: "",
         qty: 0,
         hargaBeli: 0,
-        sumber: "",
+        supplierId: undefined,
         lokasiId: "",
         keterangan: "",
         reason: "PURCHASE",
@@ -732,6 +735,7 @@ export default function InventarisPage() {
         lokasiId: "",
         paymentMethod: "CASH",
         supplier: "",
+        supplierId: "",
         dueDate: "",
       });
     } else {

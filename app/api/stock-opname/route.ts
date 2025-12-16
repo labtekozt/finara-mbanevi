@@ -120,48 +120,53 @@ export async function POST(request: NextRequest) {
     const adjustmentAmount = adjustmentAmountDecimal.toNumber();
     const isIncrease = adjustmentQty > 0;
 
-    // Create adjustment transaction and update stock
-    const adjustment = await prisma.$transaction(async (tx) => {
-      // Create adjustment record using TransaksiKeluar
-      const adjustmentTransaksi = await tx.transaksiKeluar.create({
-        data: {
-          nomorTransaksi: generateTransactionNumber("OPN"),
-          barangId: validatedData.barangId,
-          qty: adjustmentQty, // Positive for increase, negative for decrease
-          hargaBarang: barang.hargaBeli,
-          totalNilai: adjustmentAmount,
-          tujuan: "Stock Opname",
-          lokasiId: validatedData.lokasiId,
-          keterangan: `OPNAME - ${validatedData.keterangan} (Sistem: ${validatedData.stokSistem}, Fisik: ${validatedData.stokFisik}, Selisih: ${adjustmentQty > 0 ? "+" : ""}${adjustmentQty})`,
-        },
-        include: {
-          barang: true,
-          lokasi: true,
-        },
-      });
+    // Create adjustment transaction and update stock (increase timeout for accounting operations)
+    const adjustment = await prisma.$transaction(
+      async (tx) => {
+        // Create adjustment record using TransaksiKeluar
+        const adjustmentTransaksi = await tx.transaksiKeluar.create({
+          data: {
+            nomorTransaksi: generateTransactionNumber("OPN"),
+            barangId: validatedData.barangId,
+            qty: adjustmentQty, // Positive for increase, negative for decrease
+            hargaBarang: barang.hargaBeli,
+            totalNilai: adjustmentAmount,
+            tujuan: "Stock Opname",
+            lokasiId: validatedData.lokasiId,
+            keterangan: `OPNAME - ${validatedData.keterangan} (Sistem: ${validatedData.stokSistem}, Fisik: ${validatedData.stokFisik}, Selisih: ${adjustmentQty > 0 ? "+" : ""}${adjustmentQty})`,
+          },
+          include: {
+            barang: true,
+            lokasi: true,
+          },
+        });
 
-      // Update stock to match physical count
-      await tx.barang.update({
-        where: { id: validatedData.barangId },
-        data: {
-          stok: validatedData.stokFisik,
-        },
-      });
+        // Update stock to match physical count
+        await tx.barang.update({
+          where: { id: validatedData.barangId },
+          data: {
+            stok: validatedData.stokFisik,
+          },
+        });
 
-      // Log activity
-      await tx.activityLog.create({
-        data: {
-          userId: session.user.id,
-          userName: session.user.name || "",
-          action: "CREATE",
-          entity: "StockOpname",
-          entityId: adjustmentTransaksi.id,
-          description: `Stock opname ${adjustmentTransaksi.nomorTransaksi} - ${adjustmentTransaksi.barang.nama}: ${validatedData.stokSistem} → ${validatedData.stokFisik} (${adjustmentQty > 0 ? "+" : ""}${adjustmentQty})`,
-        },
-      });
+        // Log activity
+        await tx.activityLog.create({
+          data: {
+            userId: session.user.id,
+            userName: session.user.name || "",
+            action: "CREATE",
+            entity: "StockOpname",
+            entityId: adjustmentTransaksi.id,
+            description: `Stock opname ${adjustmentTransaksi.nomorTransaksi} - ${adjustmentTransaksi.barang.nama}: ${validatedData.stokSistem} → ${validatedData.stokFisik} (${adjustmentQty > 0 ? "+" : ""}${adjustmentQty})`,
+          },
+        });
 
-      return adjustmentTransaksi;
-    });
+        return adjustmentTransaksi;
+      },
+      {
+        timeout: 15000, // Increase timeout to 15 seconds for accounting operations
+      },
+    );
 
     // Create accounting journal entry (critical for balance)
     await createJournalEntryForStockAdjustment(

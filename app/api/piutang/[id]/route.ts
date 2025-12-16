@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { serializeDecimal } from "@/lib/utils";
 import logger from "@/lib/logger";
 
 // GET - Get piutang by ID
@@ -42,7 +43,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(piutang);
+    return NextResponse.json(serializeDecimal(piutang));
   } catch (error) {
     logger.error("Error fetching piutang detail:", error);
     return NextResponse.json(

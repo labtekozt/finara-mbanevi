@@ -13,7 +13,8 @@ const withPWA = withPWAInit({
     runtimeCaching: [
       {
         // Cache static assets (JS, CSS, images, fonts)
-        urlPattern: /^https?.*\.(png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf|otf|eot)$/i,
+        urlPattern:
+          /^https?.*\.(png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf|otf|eot)$/i,
         handler: "CacheFirst",
         options: {
           cacheName: "static-assets-cache",

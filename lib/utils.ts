@@ -33,3 +33,23 @@ export function serializeDecimal(obj: any): any {
 
   return obj;
 }
+
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return "-";
+
+  const parsedDate = new Date(date);
+  if (isNaN(parsedDate.getTime())) return "-";
+
+  return new Intl.DateTimeFormat("id-ID", {
+    dateStyle: "long",
+  }).format(parsedDate);
+}

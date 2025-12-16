@@ -104,84 +104,89 @@ export async function POST(request: NextRequest) {
 
     const totalNilai = validatedData.qty * barang.hargaBeli.toNumber();
 
-    // Create transaction and update stock
-    const transaksi = await prisma.$transaction(async (tx: any) => {
-      // 1. Atomic Stock Check & Update
-      const updateResult = await tx.barang.updateMany({
-        where: {
-          id: validatedData.barangId,
-          stok: { gte: validatedData.qty }, // Atomic check
-        },
-        data: {
-          stok: { decrement: validatedData.qty },
-        },
-      });
-
-      if (updateResult.count === 0) {
-        // Re-fetch to give accurate error message
-        const currentBarang = await tx.barang.findUnique({
-          where: { id: validatedData.barangId },
+    // Create transaction and update stock (increase timeout for accounting operations)
+    const transaksi = await prisma.$transaction(
+      async (tx: any) => {
+        // 1. Atomic Stock Check & Update
+        const updateResult = await tx.barang.updateMany({
+          where: {
+            id: validatedData.barangId,
+            stok: { gte: validatedData.qty }, // Atomic check
+          },
+          data: {
+            stok: { decrement: validatedData.qty },
+          },
         });
-        if (!currentBarang) {
-          throw new Error("Barang tidak ditemukan");
+
+        if (updateResult.count === 0) {
+          // Re-fetch to give accurate error message
+          const currentBarang = await tx.barang.findUnique({
+            where: { id: validatedData.barangId },
+          });
+          if (!currentBarang) {
+            throw new Error("Barang tidak ditemukan");
+          } else {
+            throw new Error(
+              `Stok ${currentBarang.nama} tidak cukup. Tersedia: ${currentBarang.stok} ${currentBarang.satuan}`,
+            );
+          }
+        }
+
+        const newTransaksi = await tx.transaksiKeluar.create({
+          data: {
+            nomorTransaksi: generateKeluarNumber(),
+            barangId: validatedData.barangId,
+            qty: validatedData.qty,
+            hargaBarang: barang.hargaBeli,
+            totalNilai,
+            tujuan: validatedData.tujuan,
+            lokasiId: validatedData.lokasiId,
+            keterangan: validatedData.keterangan,
+          },
+          include: {
+            barang: true,
+            lokasi: true,
+          },
+        });
+
+        // Create journal entry for outgoing transaction based on purpose
+        // Removed try-catch to ensure atomicity
+        const journalEntry = await createJournalEntryForOutgoingTransaction(
+          newTransaksi.id,
+          totalNilai,
+          validatedData.tujuan,
+          session.user.id,
+          tx, // Pass transaction client
+        );
+
+        if (journalEntry) {
+          logger.info(
+            `Journal entry created for outgoing transaction: ${journalEntry.nomorJurnal}`,
+          );
         } else {
-          throw new Error(
-            `Stok ${currentBarang.nama} tidak cukup. Tersedia: ${currentBarang.stok} ${currentBarang.satuan}`,
+          logger.info(
+            `No journal entry needed for warehouse transfer: ${newTransaksi.nomorTransaksi}`,
           );
         }
-      }
 
-      const newTransaksi = await tx.transaksiKeluar.create({
-        data: {
-          nomorTransaksi: generateKeluarNumber(),
-          barangId: validatedData.barangId,
-          qty: validatedData.qty,
-          hargaBarang: barang.hargaBeli,
-          totalNilai,
-          tujuan: validatedData.tujuan,
-          lokasiId: validatedData.lokasiId,
-          keterangan: validatedData.keterangan,
-        },
-        include: {
-          barang: true,
-          lokasi: true,
-        },
-      });
+        // Log activity
+        await tx.activityLog.create({
+          data: {
+            userId: session.user.id,
+            userName: session.user.name || "",
+            action: "CREATE",
+            entity: "TransaksiKeluar",
+            entityId: newTransaksi.id,
+            description: `Barang keluar ${newTransaksi.nomorTransaksi} - ${newTransaksi.barang.nama} (${validatedData.qty} ${newTransaksi.barang.satuan})`,
+          },
+        });
 
-      // Create journal entry for outgoing transaction based on purpose
-      // Removed try-catch to ensure atomicity
-      const journalEntry = await createJournalEntryForOutgoingTransaction(
-        newTransaksi.id,
-        totalNilai,
-        validatedData.tujuan,
-        session.user.id,
-        tx, // Pass transaction client
-      );
-
-      if (journalEntry) {
-        logger.info(
-          `Journal entry created for outgoing transaction: ${journalEntry.nomorJurnal}`,
-        );
-      } else {
-        logger.info(
-          `No journal entry needed for warehouse transfer: ${newTransaksi.nomorTransaksi}`,
-        );
-      }
-
-      // Log activity
-      await tx.activityLog.create({
-        data: {
-          userId: session.user.id,
-          userName: session.user.name || "",
-          action: "CREATE",
-          entity: "TransaksiKeluar",
-          entityId: newTransaksi.id,
-          description: `Barang keluar ${newTransaksi.nomorTransaksi} - ${newTransaksi.barang.nama} (${validatedData.qty} ${newTransaksi.barang.satuan})`,
-        },
-      });
-
-      return newTransaksi;
-    });
+        return newTransaksi;
+      },
+      {
+        timeout: 15000, // Increase timeout to 15 seconds for accounting operations
+      },
+    );
 
     return NextResponse.json(transaksi, { status: 201 });
   } catch (error) {

@@ -128,6 +128,29 @@ model ItemTransaksi {
   @@map("item_transaksi")
 }
 
+// Supplier/Vendor Management
+model Supplier {
+  id              String   @id @default(cuid())
+  kode            String   @unique
+  nama            String
+  alamat          String?
+  nomorTelepon    String?
+  email           String?
+  namaKontak      String?
+  kategori        String?  // Distributor, Supplier, Manufacturer, etc.
+  keterangan      String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  transaksiMasuk  TransaksiMasuk[]
+  hutang          Hutang[]
+  
+  @@index([nama])
+  @@index([isActive])
+  @@map("supplier")
+}
+
 // Incoming Goods Transaction
 model TransaksiMasuk {
   id              String   @id @default(cuid())
@@ -137,18 +160,21 @@ model TransaksiMasuk {
   qty             Int
   hargaBeli       Decimal  @db.Decimal(15, 2)
   totalNilai      Decimal  @db.Decimal(15, 2)
-  sumber          String
+  supplierId      String?  // Now linked to Supplier table
   lokasiId        String
   keterangan      String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
-  barang Barang @relation(fields: [barangId], references: [id])
-  lokasi Lokasi @relation(fields: [lokasiId], references: [id])
+  barang    Barang    @relation(fields: [barangId], references: [id])
+  lokasi    Lokasi    @relation(fields: [lokasiId], references: [id])
+  supplier  Supplier? @relation(fields: [supplierId], references: [id])
+  hutang    Hutang?
   
   @@index([tanggal])
   @@index([barangId])
   @@index([lokasiId])
+  @@index([supplierId])
   @@map("transaksi_masuk")
 }
 
@@ -404,7 +430,7 @@ model Hutang {
   nomorHutang       String   @unique
   tanggalHutang     DateTime @default(now())
   transaksiMasukId  String?  @unique
-  sumberHutang      String   // Supplier/Sumber barang
+  supplierId        String?  // Link to Supplier
   deskripsi         String   // Deskripsi barang yang dibeli
   totalHutang       Decimal  @db.Decimal(15, 2)
   totalBayar        Decimal  @default(0) @db.Decimal(15, 2)
@@ -416,10 +442,13 @@ model Hutang {
   updatedAt         DateTime @updatedAt
   
   pembayaranHutang  PembayaranHutang[]
+  supplier          Supplier? @relation(fields: [supplierId], references: [id])
+  transaksiMasuk    TransaksiMasuk? @relation(fields: [transaksiMasukId], references: [id])
   
   @@index([tanggalHutang])
   @@index([status])
   @@index([transaksiMasukId])
+  @@index([supplierId])
   @@map("hutang")
 }
 

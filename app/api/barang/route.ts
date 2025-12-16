@@ -11,22 +11,40 @@ import {
   generateMasukNumber,
 } from "@/lib/transaction-number";
 
-const barangSchema = z.object({
-  nama: z.string().min(1, "Nama barang harus diisi"),
-  sku: z.string().optional(),
-  kategori: z.string().min(1, "Kategori harus diisi"),
-  stok: z.number().int().min(0, "Stok tidak boleh negatif"),
-  stokMinimum: z.number().int().min(0, "Stok minimum tidak boleh negatif"),
-  hargaBeli: z.number().min(0, "Harga beli tidak boleh negatif"),
-  hargaJual: z.number().min(0, "Harga jual tidak boleh negatif"),
-  satuan: z.string().min(1, "Satuan harus diisi"),
-  deskripsi: z.string().optional(),
-  lokasiId: z.string().min(1, "Lokasi harus dipilih"),
-  // Optional fields for initial stock purchase
-  paymentMethod: z.enum(["CASH", "CREDIT"]).optional(),
-  supplier: z.string().optional(),
-  dueDate: z.string().optional(),
-});
+const barangSchema = z
+  .object({
+    nama: z.string().min(1, "Nama barang harus diisi"),
+    sku: z.string().optional(),
+    kategori: z.string().min(1, "Kategori harus diisi"),
+    stok: z.number().int().min(0, "Stok tidak boleh negatif"),
+    stokMinimum: z.number().int().min(0, "Stok minimum tidak boleh negatif"),
+    hargaBeli: z.number().min(0, "Harga beli tidak boleh negatif"),
+    hargaJual: z.number().min(0, "Harga jual tidak boleh negatif"),
+    satuan: z.string().min(1, "Satuan harus diisi"),
+    deskripsi: z.string().optional(),
+    lokasiId: z.string().min(1, "Lokasi harus dipilih"),
+    // Optional fields for initial stock purchase
+    paymentMethod: z.enum(["CASH", "CREDIT"]).optional(),
+    supplierId: z.string().optional(),
+    dueDate: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      // If payment method is CREDIT, supplierId is required
+      if (
+        data.paymentMethod === "CREDIT" &&
+        data.stok > 0 &&
+        !data.supplierId
+      ) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Supplier harus dipilih untuk pembelian kredit",
+      path: ["supplierId"],
+    },
+  );
 
 // GET - List all items with optional filters
 export async function GET(request: NextRequest) {
@@ -123,96 +141,104 @@ export async function POST(request: NextRequest) {
       sku = generateTransactionNumber("BRG");
     }
 
-    // Use transaction to ensure data integrity
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Create Barang
-      const barang = await tx.barang.create({
-        data: {
-          nama: validatedData.nama,
-          sku: sku!,
-          kategori: validatedData.kategori,
-          stok: validatedData.stok,
-          stokMinimum: validatedData.stokMinimum,
-          hargaBeli: validatedData.hargaBeli,
-          hargaJual: validatedData.hargaJual,
-          satuan: validatedData.satuan,
-          deskripsi: validatedData.deskripsi,
-          lokasiId: validatedData.lokasiId,
-        },
-        include: {
-          lokasi: true,
-        },
-      });
-
-      // 2. Log activity
-      await tx.activityLog.create({
-        data: {
-          userId: session.user.id,
-          userName: session.user.name || "",
-          action: "CREATE",
-          entity: "Barang",
-          entityId: barang.id,
-          description: `Menambah barang baru: ${barang.nama}`,
-        },
-      });
-
-      // 3. Handle Initial Stock (Create TransaksiMasuk & Journal)
-      if (validatedData.stok > 0) {
-        const totalNilai = validatedData.stok * validatedData.hargaBeli;
-        const reason = validatedData.supplier
-          ? "PURCHASE"
-          : "INTERNAL_ADJUSTMENT";
-
-        // Create TransaksiMasuk record for traceability
-        const transaksiMasuk = await tx.transaksiMasuk.create({
+    // Use transaction to ensure data integrity (increase timeout for accounting operations)
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // 1. Create Barang
+        const barang = await tx.barang.create({
           data: {
-            nomorTransaksi: generateMasukNumber(),
-            barangId: barang.id,
-            qty: validatedData.stok,
+            nama: validatedData.nama,
+            sku: sku!,
+            kategori: validatedData.kategori,
+            stok: validatedData.stok,
+            stokMinimum: validatedData.stokMinimum,
             hargaBeli: validatedData.hargaBeli,
-            totalNilai: totalNilai,
-            sumber: validatedData.supplier || "Initial Inventory",
+            hargaJual: validatedData.hargaJual,
+            satuan: validatedData.satuan,
+            deskripsi: validatedData.deskripsi,
             lokasiId: validatedData.lokasiId,
-            keterangan: "Stok awal barang baru",
-            tanggal: new Date(),
+          },
+          include: {
+            lokasi: true,
           },
         });
 
-        // If Credit Purchase, create Hutang
-        if (reason === "PURCHASE" && validatedData.paymentMethod === "CREDIT") {
-          const nomorHutang = `HTG-${Date.now()}`;
-          const deskripsi = `Pembelian Awal ${barang.nama} - ${validatedData.stok} ${barang.satuan}`;
+        // 2. Log activity
+        await tx.activityLog.create({
+          data: {
+            userId: session.user.id,
+            userName: session.user.name || "",
+            action: "CREATE",
+            entity: "Barang",
+            entityId: barang.id,
+            description: `Menambah barang baru: ${barang.nama}`,
+          },
+        });
 
-          await tx.hutang.create({
+        // 3. Handle Initial Stock (Create TransaksiMasuk & Journal)
+        if (validatedData.stok > 0) {
+          const totalNilai = validatedData.stok * validatedData.hargaBeli;
+          const reason = validatedData.supplierId
+            ? "PURCHASE"
+            : "INTERNAL_ADJUSTMENT";
+
+          // Create TransaksiMasuk record for traceability
+          const transaksiMasuk = await tx.transaksiMasuk.create({
             data: {
-              nomorHutang,
-              transaksiMasukId: transaksiMasuk.id,
-              sumberHutang: validatedData.supplier!,
-              deskripsi,
-              totalHutang: totalNilai,
-              totalBayar: 0,
-              sisaHutang: totalNilai,
-              status: "BELUM_LUNAS",
-              jatuhTempo: validatedData.dueDate
-                ? new Date(validatedData.dueDate)
-                : null,
+              nomorTransaksi: generateMasukNumber(),
+              barangId: barang.id,
+              qty: validatedData.stok,
+              hargaBeli: validatedData.hargaBeli,
+              totalNilai: totalNilai,
+              supplierId: validatedData.supplierId,
+              lokasiId: validatedData.lokasiId,
+              keterangan: "Stok awal barang baru",
+              tanggal: new Date(),
             },
           });
+
+          // If Credit Purchase, create Hutang
+          if (
+            reason === "PURCHASE" &&
+            validatedData.paymentMethod === "CREDIT"
+          ) {
+            const nomorHutang = `HTG-${Date.now()}`;
+            const deskripsi = `Pembelian Awal ${barang.nama} - ${validatedData.stok} ${barang.satuan}`;
+
+            await tx.hutang.create({
+              data: {
+                nomorHutang,
+                transaksiMasukId: transaksiMasuk.id,
+                supplierId: validatedData.supplierId,
+                deskripsi,
+                totalHutang: totalNilai,
+                totalBayar: 0,
+                sisaHutang: totalNilai,
+                status: "BELUM_LUNAS",
+                jatuhTempo: validatedData.dueDate
+                  ? new Date(validatedData.dueDate)
+                  : null,
+              },
+            });
+          }
+
+          // Create Journal Entry
+          await createJournalEntryForStockAddition(
+            transaksiMasuk.id,
+            totalNilai,
+            reason,
+            session.user.id,
+            validatedData.paymentMethod,
+            tx,
+          );
         }
 
-        // Create Journal Entry
-        await createJournalEntryForStockAddition(
-          transaksiMasuk.id,
-          totalNilai,
-          reason,
-          session.user.id,
-          validatedData.paymentMethod,
-          tx,
-        );
-      }
-
-      return barang;
-    });
+        return barang;
+      },
+      {
+        timeout: 15000, // Increase timeout to 15 seconds for complex accounting operations
+      },
+    );
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

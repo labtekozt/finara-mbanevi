@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,7 @@ interface TambahEditBarangDialogProps {
     lokasiId: string;
     paymentMethod?: "CASH" | "CREDIT";
     supplier?: string;
+    supplierId?: string;
     dueDate?: string;
   };
   setFormData: (data: any) => void;
@@ -46,7 +47,7 @@ interface TambahEditBarangDialogProps {
     barangId: string;
     qty: number;
     hargaBeli: number;
-    sumber: string;
+    supplierId?: string;
     lokasiId: string;
     keterangan: string;
     reason: "PURCHASE" | "STOCK_OPNAME_SURPLUS" | "INTERNAL_ADJUSTMENT";
@@ -86,11 +87,19 @@ export function TambahEditBarangDialog({
     alamat: "",
   });
   const [lokasiLoading, setLokasiLoading] = useState(false);
-  const [sumberMode, setSumberMode] = useState<"select" | "custom">("select");
-  const [customSumber, setCustomSumber] = useState("");
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [isCreatingSupplier, setIsCreatingSupplier] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState("");
 
-  // Daftar sumber barang default
-  const sumberBarangList = ["Sales muffin"];
+  // Fetch suppliers when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetch("/api/supplier?isActive=true")
+        .then((res) => res.json())
+        .then((data) => setSuppliers(data))
+        .catch((err) => console.error("Failed to fetch suppliers", err));
+    }
+  }, [open]);
 
   const handleCreateLokasi = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,6 +147,41 @@ export function TambahEditBarangDialog({
       toast.error(error.message || "Terjadi kesalahan");
     } finally {
       setLokasiLoading(false);
+    }
+  };
+
+  const handleCreateSupplier = async () => {
+    if (!newSupplierName.trim()) return;
+    try {
+      const res = await fetch("/api/supplier", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nama: newSupplierName, isActive: true }),
+      });
+      if (res.ok) {
+        const newSupplier = await res.json();
+        setSuppliers([...suppliers, newSupplier]);
+
+        if (editingItem || tambahMode === "new") {
+          setFormData({
+            ...formData,
+            supplierId: newSupplier.id,
+          });
+        } else {
+          setFormTambahStok({
+            ...formTambahStok,
+            supplierId: newSupplier.id,
+          });
+        }
+
+        setIsCreatingSupplier(false);
+        setNewSupplierName("");
+        toast.success("Supplier berhasil dibuat");
+      } else {
+        toast.error("Gagal membuat supplier");
+      }
+    } catch (error) {
+      toast.error("Gagal membuat supplier");
     }
   };
   return (
@@ -223,71 +267,58 @@ export function TambahEditBarangDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sumber-tambah">Sumber Barang *</Label>
-                  {sumberMode === "select" ? (
-                    <Select
-                      value={
-                        formTambahStok.sumber &&
-                        sumberBarangList.includes(formTambahStok.sumber)
-                          ? formTambahStok.sumber
-                          : "CUSTOM"
-                      }
-                      onValueChange={(value: string) => {
-                        if (value === "CUSTOM") {
-                          setSumberMode("custom");
-                          setCustomSumber("");
-                          setFormTambahStok({
-                            ...formTambahStok,
-                            sumber: "",
-                          });
-                        } else {
-                          setFormTambahStok({
-                            ...formTambahStok,
-                            sumber: value,
-                          });
-                        }
-                      }}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih sumber barang" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sumberBarangList.map((sumber) => (
-                          <SelectItem key={sumber} value={sumber}>
-                            {sumber}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="CUSTOM">
-                          ➕ Tambah Sumber Lain
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
+                  <Label htmlFor="sumber-tambah">
+                    Supplier / Sumber Barang *
+                  </Label>
+                  {isCreatingSupplier ? (
                     <div className="flex gap-2">
                       <Input
-                        id="sumber-tambah"
-                        value={customSumber}
-                        onChange={(e) => {
-                          setCustomSumber(e.target.value);
-                          setFormTambahStok({
-                            ...formTambahStok,
-                            sumber: e.target.value,
-                          });
-                        }}
-                        placeholder="Masukkan nama sumber barang"
-                        required
+                        value={newSupplierName}
+                        onChange={(e) => setNewSupplierName(e.target.value)}
+                        placeholder="Nama Supplier Baru"
+                        autoFocus
                       />
+                      <Button type="button" onClick={handleCreateSupplier}>
+                        Simpan
+                      </Button>
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => {
-                          setSumberMode("select");
-                          setCustomSumber("");
-                        }}
+                        onClick={() => setIsCreatingSupplier(false)}
                       >
                         Batal
                       </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Select
+                        value={formTambahStok.supplierId || ""}
+                        onValueChange={(value) => {
+                          if (value === "NEW") {
+                            setIsCreatingSupplier(true);
+                          } else {
+                            setFormTambahStok({
+                              ...formTambahStok,
+                              supplierId: value,
+                            });
+                          }
+                        }}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih Supplier" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {suppliers.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.nama}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="NEW">
+                            ➕ Tambah Supplier Baru
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
                 </div>
@@ -588,15 +619,57 @@ export function TambahEditBarangDialog({
                       <Label htmlFor="supplier">
                         Pemasok / Sumber Barang *
                       </Label>
-                      <Input
-                        id="supplier"
-                        value={formData.supplier || ""}
-                        onChange={(e) =>
-                          setFormData({ ...formData, supplier: e.target.value })
-                        }
-                        placeholder="Nama pemasok atau sumber barang"
-                        required
-                      />
+                      {isCreatingSupplier ? (
+                        <div className="flex gap-2">
+                          <Input
+                            value={newSupplierName}
+                            onChange={(e) => setNewSupplierName(e.target.value)}
+                            placeholder="Nama Supplier Baru"
+                            autoFocus
+                          />
+                          <Button type="button" onClick={handleCreateSupplier}>
+                            Simpan
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsCreatingSupplier(false)}
+                          >
+                            Batal
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Select
+                            value={formData.supplierId || ""}
+                            onValueChange={(value) => {
+                              if (value === "NEW") {
+                                setIsCreatingSupplier(true);
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  supplierId: value,
+                                });
+                              }
+                            }}
+                            required
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih Supplier" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {suppliers.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                  {s.nama}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="NEW">
+                                ➕ Tambah Supplier Baru
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

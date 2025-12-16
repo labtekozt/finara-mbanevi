@@ -118,12 +118,12 @@ export function generateReceiptHTML(
     
     body {
       font-family: 'Courier New', Courier, monospace;
-      font-size: 11pt;
+      font-size: 9pt;
       font-weight: 600;
-      line-height: 1.3;
+      line-height: 1.2;
       width: 58mm;
       margin: 0 auto;
-      padding: 5mm 3mm;
+      padding: 1mm 2mm;
       background: white;
       color: black;
       -webkit-print-color-adjust: exact;
@@ -143,17 +143,17 @@ export function generateReceiptHTML(
     }
     
     .large {
-      font-size: 13pt;
+      font-size: 11pt;
       font-weight: 700;
     }
     
     .small {
-      font-size: 9pt;
+      font-size: 8pt;
       font-weight: 600;
     }
     
     .separator {
-      margin: 3mm 0;
+      margin: 1mm 0;
       border: none;
       border-top: 1px solid #000;
     }
@@ -165,7 +165,7 @@ export function generateReceiptHTML(
     .item-row {
       display: flex;
       justify-content: space-between;
-      margin: 2mm 0;
+      margin: 1mm 0;
     }
     
     .item-name {
@@ -174,36 +174,36 @@ export function generateReceiptHTML(
     }
     
     .item-qty-price {
-      font-size: 10pt;
+      font-size: 8pt;
       color: #333;
     }
     
     .item-total {
       text-align: right;
-      min-width: 80px;
+      min-width: 70px;
     }
     
     .total-section {
-      margin-top: 3mm;
-      padding-top: 2mm;
+      margin-top: 1mm;
+      padding-top: 1mm;
       border-top: 2px solid #000;
     }
     
     .total-row {
       display: flex;
       justify-content: space-between;
-      margin: 1mm 0;
+      margin: 0.5mm 0;
     }
     
     .grand-total {
-      font-size: 13pt;
+      font-size: 10pt;
       font-weight: bold;
-      margin: 2mm 0;
+      margin: 1mm 0;
     }
     
     .footer {
-      margin-top: 5mm;
-      padding-top: 3mm;
+      margin-top: 2mm;
+      padding-top: 1mm;
       border-top: 1px dashed #000;
     }
     
@@ -225,12 +225,12 @@ export function generateReceiptHTML(
     
     .badge {
       display: inline-block;
-      padding: 2px 6px;
+      padding: 1px 4px;
       background: #000;
       color: white;
-      font-size: 9pt;
-      border-radius: 3px;
-      margin: 2mm 0;
+      font-size: 8pt;
+      border-radius: 2px;
+      margin: 1mm 0;
     }
   </style>
 </head>
@@ -244,7 +244,7 @@ export function generateReceiptHTML(
       ${settings.alamat ? `<div class="small">${settings.alamat}</div>` : ""}
       ${settings.nomorTelepon ? `<div class="small">Telp: ${settings.nomorTelepon}</div>` : ""}
       ${settings.email ? `<div class="small">${settings.email}</div>` : ""}
-      ${settings.tagline ? `<div class="small" style="font-style: italic; margin-top: 2mm;">${settings.tagline}</div>` : ""}
+      ${settings.tagline ? `<div class="small" style="font-style: italic; margin-top: 1mm;">${settings.tagline}</div>` : ""}
     </div>
     
     <hr class="separator">
@@ -278,7 +278,7 @@ export function generateReceiptHTML(
       ${items
         .map(
           (item) => `
-        <div style="margin: 3mm 0;">
+        <div style="margin: 1mm 0;">
           <div class="bold">${item.nama}</div>
           <div style="display: flex; justify-content: space-between;">
             <span class="small">${item.qty} x ${formatCurrency(item.harga)}</span>
@@ -346,13 +346,13 @@ export function generateReceiptHTML(
     <!-- Footer -->
     <div class="footer center small">
       ${settings.footerText || "Terima kasih atas kunjungan Anda"}
-      <div style="margin-top: 3mm;">
+      <div style="margin-top: 1mm;">
         Barang yang sudah dibeli tidak dapat<br>
         dikembalikan kecuali ada kesepakatan
       </div>
     </div>
     
-    <div class="center" style="margin-top: 5mm;">
+    <div class="center" style="margin-top: 2mm;">
       <div class="small">*** SIMPAN STRUK INI ***</div>
     </div>
   </div>

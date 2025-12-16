@@ -76,7 +76,11 @@ export async function POST(request: NextRequest) {
     // Get original purchase transaction
     const originalTransaksi = await prisma.transaksiMasuk.findUnique({
       where: { id: validatedData.transaksiMasukId },
-      include: { barang: true },
+      include: {
+        barang: true,
+        hutang: true,
+        supplier: true,
+      },
     });
 
     if (!originalTransaksi) {
@@ -112,73 +116,76 @@ export async function POST(request: NextRequest) {
     const returnAmount =
       validatedData.qty * originalTransaksi.hargaBeli.toNumber();
 
-    // Determine if original purchase was cash or credit based on source
-    const isCashPurchase =
-      originalTransaksi.sumber.toLowerCase().includes("tunai") ||
-      originalTransaksi.sumber.toLowerCase().includes("cash") ||
-      originalTransaksi.sumber.toLowerCase().includes("bayar");
+    // Determine if original purchase was cash or credit based on Hutang existence
+    const isCreditPurchase = !!originalTransaksi.hutang;
+    const isCashPurchase = !isCreditPurchase;
 
     logger.info("Retur Pembelian Debug:", {
-      sumber: originalTransaksi.sumber,
+      supplier: originalTransaksi.supplier?.nama,
       isCashPurchase,
       returnAmount,
     });
 
-    // Create return transaction and update stock
-    const retur = await prisma.$transaction(async (tx) => {
-      // Create a new "return" transaction record (using TransaksiMasuk with negative qty)
-      const returnTransaksi = await tx.transaksiMasuk.create({
-        data: {
-          nomorTransaksi: generateTransactionNumber("RTP"),
-          barangId: originalTransaksi.barangId,
-          qty: -validatedData.qty, // Negative to indicate return
-          hargaBeli: originalTransaksi.hargaBeli,
-          totalNilai: -returnAmount, // Negative
-          sumber: `Retur: ${originalTransaksi.sumber}`,
-          lokasiId: originalTransaksi.lokasiId,
-          // Include original transaction number for tracking
-          keterangan: `RETUR ${originalTransaksi.nomorTransaksi} - ${validatedData.alasan}${validatedData.catatan ? ` - ${validatedData.catatan}` : ""}`,
-        },
-        include: {
-          barang: true,
-          lokasi: true,
-        },
-      });
-
-      // Update stock (decrease due to return)
-      await tx.barang.update({
-        where: { id: originalTransaksi.barangId },
-        data: {
-          stok: {
-            decrement: validatedData.qty,
+    // Create return transaction and update stock (increase timeout for accounting operations)
+    const retur = await prisma.$transaction(
+      async (tx) => {
+        // Create a new "return" transaction record (using TransaksiMasuk with negative qty)
+        const returnTransaksi = await tx.transaksiMasuk.create({
+          data: {
+            nomorTransaksi: generateTransactionNumber("RTP"),
+            barangId: originalTransaksi.barangId,
+            qty: -validatedData.qty, // Negative to indicate return
+            hargaBeli: originalTransaksi.hargaBeli,
+            totalNilai: -returnAmount, // Negative
+            supplierId: originalTransaksi.supplierId,
+            lokasiId: originalTransaksi.lokasiId,
+            // Include original transaction number for tracking
+            keterangan: `RETUR ${originalTransaksi.nomorTransaksi} - ${validatedData.alasan}${validatedData.catatan ? ` - ${validatedData.catatan}` : ""}`,
           },
-        },
-      });
+          include: {
+            barang: true,
+            lokasi: true,
+          },
+        });
 
-      // Log activity
-      await tx.activityLog.create({
-        data: {
-          userId: session.user.id,
-          userName: session.user.name || "",
-          action: "CREATE",
-          entity: "ReturPembelian",
-          entityId: returnTransaksi.id,
-          description: `Retur pembelian ${returnTransaksi.nomorTransaksi} - ${returnTransaksi.barang.nama} (${validatedData.qty} ${returnTransaksi.barang.satuan})`,
-        },
-      });
+        // Update stock (decrease due to return)
+        await tx.barang.update({
+          where: { id: originalTransaksi.barangId },
+          data: {
+            stok: {
+              decrement: validatedData.qty,
+            },
+          },
+        });
 
-      // Create accounting journal entry (critical for balance)
-      // Now inside the transaction!
-      await createJournalEntryForPurchaseReturn(
-        returnTransaksi.nomorTransaksi,
-        returnAmount,
-        isCashPurchase,
-        session.user.id,
-        tx, // Pass transaction client
-      );
+        // Log activity
+        await tx.activityLog.create({
+          data: {
+            userId: session.user.id,
+            userName: session.user.name || "",
+            action: "CREATE",
+            entity: "ReturPembelian",
+            entityId: returnTransaksi.id,
+            description: `Retur pembelian ${returnTransaksi.nomorTransaksi} - ${originalTransaksi.barang.nama} (${validatedData.qty} ${originalTransaksi.barang.satuan})`,
+          },
+        });
 
-      return returnTransaksi;
-    });
+        // Create accounting journal entry (critical for balance)
+        // Now inside the transaction!
+        await createJournalEntryForPurchaseReturn(
+          returnTransaksi.nomorTransaksi,
+          returnAmount,
+          isCashPurchase,
+          session.user.id,
+          tx, // Pass transaction client
+        );
+
+        return returnTransaksi;
+      },
+      {
+        timeout: 15000, // Increase timeout to 15 seconds for accounting operations
+      },
+    );
 
     return NextResponse.json(retur, { status: 201 });
   } catch (error) {

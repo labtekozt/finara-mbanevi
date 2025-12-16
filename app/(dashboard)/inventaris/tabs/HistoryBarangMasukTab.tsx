@@ -35,7 +35,10 @@ interface TransaksiMasuk {
   qty: number;
   hargaBeli: number;
   totalNilai: number;
-  sumber: string;
+  supplier?: {
+    id: string;
+    nama: string;
+  };
   keterangan?: string;
   barang: Barang;
   lokasi: Lokasi;
@@ -192,11 +195,11 @@ export function HistoryBarangMasukTab({
                   </TableHead>
                   <TableHead
                     className="cursor-pointer"
-                    onClick={() => handleSort("sumber")}
+                    onClick={() => handleSort("supplier.nama")}
                   >
                     <div className="flex items-center">
-                      Sumber
-                      {getSortIcon("sumber")}
+                      Supplier
+                      {getSortIcon("supplier.nama")}
                     </div>
                   </TableHead>
                   <TableHead>Lokasi</TableHead>
@@ -242,7 +245,9 @@ export function HistoryBarangMasukTab({
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{tr.sumber}</Badge>
+                        <Badge variant="secondary">
+                          {tr.supplier?.nama || "-"}
+                        </Badge>
                       </TableCell>
                       <TableCell>{tr.lokasi.namaLokasi}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">

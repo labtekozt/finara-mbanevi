@@ -57,7 +57,10 @@ interface Hutang {
   id: string;
   nomorHutang: string;
   tanggalHutang: string;
-  sumberHutang: string;
+  supplier?: {
+    id: string;
+    nama: string;
+  };
   deskripsi: string;
   totalHutang: number;
   totalBayar: number;
@@ -372,7 +375,17 @@ export default function HutangPiutangPage() {
                             <TableCell>
                               {format(new Date(h.tanggalHutang), "dd/MM/yyyy")}
                             </TableCell>
-                            <TableCell>{h.sumberHutang}</TableCell>
+                            <TableCell>
+                              {h.supplier ? (
+                                <div className="flex flex-col">
+                                  <span className="font-medium">
+                                    {h.supplier.nama}
+                                  </span>
+                                </div>
+                              ) : (
+                                "-"
+                              )}
+                            </TableCell>
                             <TableCell className="max-w-xs truncate">
                               {h.deskripsi}
                             </TableCell>
@@ -526,7 +539,8 @@ export default function HutangPiutangPage() {
           <DialogHeader>
             <DialogTitle>Bayar Hutang</DialogTitle>
             <DialogDescription>
-              Catat pembayaran hutang kepada {selectedHutang?.sumberHutang}
+              Catat pembayaran hutang kepada{" "}
+              {selectedHutang?.supplier?.nama || "-"}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleBayarHutang}>

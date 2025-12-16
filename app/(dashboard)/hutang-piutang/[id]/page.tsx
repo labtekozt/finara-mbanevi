@@ -21,7 +21,14 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Calendar, DollarSign, User, FileText } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  DollarSign,
+  User,
+  FileText,
+  Receipt,
+} from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -59,7 +66,11 @@ interface HutangDetail {
   id: string;
   nomorHutang: string;
   tanggalHutang: string;
-  sumberHutang: string;
+  supplierId?: string;
+  supplier?: {
+    id: string;
+    nama: string;
+  };
   deskripsi: string;
   totalHutang: number;
   totalBayar: number;
@@ -91,7 +102,7 @@ interface PiutangDetail {
 type DetailData = HutangDetail | PiutangDetail;
 
 function isHutang(data: DetailData): data is HutangDetail {
-  return "sumberHutang" in data;
+  return "nomorHutang" in data;
 }
 
 function isPiutang(data: DetailData): data is PiutangDetail {
@@ -229,9 +240,8 @@ export default function DetailPage() {
             <CardContent>
               <div className="text-2xl font-bold">
                 Rp{" "}
-                {(isHutang(data)
-                  ? data.totalHutang
-                  : data.totalPiutang
+                {(
+                  (isHutang(data) ? data.totalHutang : data.totalPiutang) || 0
                 ).toLocaleString("id-ID")}
               </div>
             </CardContent>
@@ -246,7 +256,7 @@ export default function DetailPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                Rp {data.totalBayar.toLocaleString("id-ID")}
+                Rp {(data.totalBayar || 0).toLocaleString("id-ID")}
               </div>
             </CardContent>
           </Card>
@@ -259,9 +269,8 @@ export default function DetailPage() {
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
                 Rp{" "}
-                {(isHutang(data)
-                  ? data.sisaHutang
-                  : data.sisaPiutang
+                {(
+                  (isHutang(data) ? data.sisaHutang : data.sisaPiutang) || 0
                 ).toLocaleString("id-ID")}
               </div>
             </CardContent>
@@ -270,12 +279,12 @@ export default function DetailPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Jumlah Cicilan
+                Jumlah Pembayaran
               </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Receipt className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{payments.length}x</div>
+              <div className="text-2xl font-bold">{payments?.length || 0}x</div>
             </CardContent>
           </Card>
         </div>
@@ -301,22 +310,26 @@ export default function DetailPage() {
                   Tanggal
                 </p>
                 <p className="text-lg font-semibold">
-                  {format(
-                    new Date(
-                      isHutang(data) ? data.tanggalHutang : data.tanggalPiutang,
-                    ),
-                    "dd MMMM yyyy",
-                    { locale: idLocale },
-                  )}
+                  {(() => {
+                    const dateStr = isHutang(data)
+                      ? data.tanggalHutang
+                      : data.tanggalPiutang;
+                    const date = dateStr ? new Date(dateStr) : null;
+                    return date && !isNaN(date.getTime())
+                      ? format(date, "dd MMMM yyyy", { locale: idLocale })
+                      : "-";
+                  })()}
                 </p>
               </div>
 
               {isHutang(data) ? (
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    Sumber Hutang
+                    Supplier
                   </p>
-                  <p className="text-lg font-semibold">{data.sumberHutang}</p>
+                  <p className="text-lg font-semibold">
+                    {data.supplier?.nama || "-"}
+                  </p>
                 </div>
               ) : (
                 <>
@@ -425,7 +438,7 @@ export default function DetailPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {payments.length === 0 ? (
+            {!payments || payments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <FileText className="h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-lg font-medium">Belum ada pembayaran</p>
@@ -450,11 +463,16 @@ export default function DetailPage() {
                       <TableRow key={payment.id}>
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>
-                          {format(
-                            new Date(payment.tanggalBayar),
-                            "dd MMM yyyy HH:mm",
-                            { locale: idLocale },
-                          )}
+                          {(() => {
+                            const date = payment.tanggalBayar
+                              ? new Date(payment.tanggalBayar)
+                              : null;
+                            return date && !isNaN(date.getTime())
+                              ? format(date, "dd MMM yyyy HH:mm", {
+                                  locale: idLocale,
+                                })
+                              : "-";
+                          })()}
                         </TableCell>
                         <TableCell className="font-semibold">
                           Rp {payment.jumlahBayar.toLocaleString("id-ID")}

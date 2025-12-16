@@ -29,7 +29,10 @@ export interface TransaksiMasuk {
   qty: number;
   hargaBeli: number;
   totalNilai: number;
-  sumber: string;
+  supplier?: {
+    id: string;
+    nama: string;
+  };
   keterangan?: string;
   barang: Barang;
   lokasi: Lokasi;

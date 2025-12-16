@@ -11,7 +11,7 @@ const transaksiMasukSchema = z.object({
   barangId: z.string().min(1, "Barang harus dipilih"),
   qty: z.number().int().positive("Jumlah harus lebih dari 0"),
   hargaBeli: z.number().min(0, "Harga beli tidak boleh negatif"),
-  sumber: z.string().min(1, "Sumber barang harus diisi"),
+  supplierId: z.string().optional(), // Optional because internal adjustment might not have supplier
   lokasiId: z.string().min(1, "Lokasi harus dipilih"),
   keterangan: z.string().optional(),
   reason: z.enum(["PURCHASE", "STOCK_OPNAME_SURPLUS", "INTERNAL_ADJUSTMENT"], {
@@ -104,86 +104,91 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create transaction and update stock
-    const transaksi = await prisma.$transaction(async (tx: any) => {
-      const newTransaksi = await tx.transaksiMasuk.create({
-        data: {
-          nomorTransaksi: generateMasukNumber(),
-          barangId: validatedData.barangId,
-          qty: validatedData.qty,
-          hargaBeli: validatedData.hargaBeli,
-          totalNilai,
-          sumber: validatedData.sumber,
-          lokasiId: validatedData.lokasiId,
-          keterangan: validatedData.keterangan,
-        },
-        include: {
-          barang: true,
-          lokasi: true,
-        },
-      });
-
-      // Update stock
-      await tx.barang.update({
-        where: { id: validatedData.barangId },
-        data: {
-          stok: {
-            increment: validatedData.qty,
-          },
-          hargaBeli: validatedData.hargaBeli, // Update purchase price
-        },
-      });
-
-      // Create hutang if payment method is CREDIT
-      if (
-        validatedData.reason === "PURCHASE" &&
-        validatedData.paymentMethod === "CREDIT"
-      ) {
-        const nomorHutang = `HTG-${Date.now()}`;
-        const deskripsi = `Pembelian ${newTransaksi.barang.nama} - ${validatedData.qty} ${newTransaksi.barang.satuan}`;
-
-        await tx.hutang.create({
+    // Create transaction and update stock (increase timeout for accounting operations)
+    const transaksi = await prisma.$transaction(
+      async (tx: any) => {
+        const newTransaksi = await tx.transaksiMasuk.create({
           data: {
-            nomorHutang,
-            transaksiMasukId: newTransaksi.id,
-            sumberHutang: validatedData.sumber,
-            deskripsi,
-            totalHutang: totalNilai,
-            totalBayar: 0,
-            sisaHutang: totalNilai,
-            status: "BELUM_LUNAS",
-            jatuhTempo: validatedData.dueDate
-              ? new Date(validatedData.dueDate)
-              : null,
+            nomorTransaksi: generateMasukNumber(),
+            barangId: validatedData.barangId,
+            qty: validatedData.qty,
+            hargaBeli: validatedData.hargaBeli,
+            totalNilai,
+            supplierId: validatedData.supplierId,
+            lokasiId: validatedData.lokasiId,
+            keterangan: validatedData.keterangan,
+          },
+          include: {
+            barang: true,
+            lokasi: true,
           },
         });
-      }
 
-      // Log activity
-      await tx.activityLog.create({
-        data: {
-          userId: session.user.id,
-          userName: session.user.name || "",
-          action: "CREATE",
-          entity: "TransaksiMasuk",
-          entityId: newTransaksi.id,
-          description: `Barang masuk ${newTransaksi.nomorTransaksi} - ${newTransaksi.barang.nama} (${validatedData.qty} ${newTransaksi.barang.satuan})`,
-        },
-      });
+        // Update stock
+        await tx.barang.update({
+          where: { id: validatedData.barangId },
+          data: {
+            stok: {
+              increment: validatedData.qty,
+            },
+            hargaBeli: validatedData.hargaBeli, // Update purchase price
+          },
+        });
 
-      // Create accounting journal entry (critical for balance)
-      // Now inside the transaction!
-      await createJournalEntryForStockAddition(
-        newTransaksi.id,
-        totalNilai,
-        validatedData.reason,
-        session.user.id,
-        validatedData.paymentMethod,
-        tx, // Pass transaction client
-      );
+        // Create hutang if payment method is CREDIT
+        if (
+          validatedData.reason === "PURCHASE" &&
+          validatedData.paymentMethod === "CREDIT"
+        ) {
+          const nomorHutang = `HTG-${Date.now()}`;
+          const deskripsi = `Pembelian ${newTransaksi.barang.nama} - ${validatedData.qty} ${newTransaksi.barang.satuan}`;
 
-      return newTransaksi;
-    });
+          await tx.hutang.create({
+            data: {
+              nomorHutang,
+              transaksiMasukId: newTransaksi.id,
+              supplierId: validatedData.supplierId,
+              deskripsi,
+              totalHutang: totalNilai,
+              totalBayar: 0,
+              sisaHutang: totalNilai,
+              status: "BELUM_LUNAS",
+              jatuhTempo: validatedData.dueDate
+                ? new Date(validatedData.dueDate)
+                : null,
+            },
+          });
+        }
+
+        // Log activity
+        await tx.activityLog.create({
+          data: {
+            userId: session.user.id,
+            userName: session.user.name || "",
+            action: "CREATE",
+            entity: "TransaksiMasuk",
+            entityId: newTransaksi.id,
+            description: `Barang masuk ${newTransaksi.nomorTransaksi} - ${newTransaksi.barang.nama} (${validatedData.qty} ${newTransaksi.barang.satuan})`,
+          },
+        });
+
+        // Create accounting journal entry (critical for balance)
+        // Now inside the transaction!
+        await createJournalEntryForStockAddition(
+          newTransaksi.id,
+          totalNilai,
+          validatedData.reason,
+          session.user.id,
+          validatedData.paymentMethod,
+          tx, // Pass transaction client
+        );
+
+        return newTransaksi;
+      },
+      {
+        timeout: 15000, // Increase timeout to 15 seconds for accounting operations
+      },
+    );
 
     return NextResponse.json(transaksi, { status: 201 });
   } catch (error) {

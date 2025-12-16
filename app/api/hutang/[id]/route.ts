@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { serializeDecimal } from "@/lib/utils";
 import logger from "@/lib/logger";
 
 // GET - Get hutang by ID
@@ -27,6 +28,12 @@ export async function GET(
             tanggalBayar: "asc",
           },
         },
+        supplier: {
+          select: {
+            id: true,
+            nama: true,
+          },
+        },
       },
     });
 
@@ -37,7 +44,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(hutang);
+    return NextResponse.json(serializeDecimal(hutang));
   } catch (error) {
     logger.error("Error fetching hutang detail:", error);
     return NextResponse.json(

@@ -17,6 +17,12 @@ export async function GET(request: NextRequest) {
         tanggalHutang: "desc",
       },
       include: {
+        supplier: {
+          select: {
+            id: true,
+            nama: true,
+          },
+        },
         pembayaranHutang: {
           orderBy: {
             tanggalBayar: "desc",

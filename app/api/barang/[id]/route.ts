@@ -24,7 +24,7 @@ const barangSchema = z.object({
   lokasiId: z.string().min(1, "Lokasi harus dipilih"),
   // Optional fields for stock addition during edit
   paymentMethod: z.enum(["CASH", "CREDIT"]).optional(),
-  supplier: z.string().optional(),
+  supplierId: z.string().optional(),
   dueDate: z.string().optional(),
 });
 
@@ -109,121 +109,127 @@ export async function PUT(
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
 
-    // Use transaction for atomicity
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Update Barang
-      // We need to exclude the optional fields that are not part of Barang model
-      const { paymentMethod, supplier, dueDate, ...barangData } = validatedData;
+    // Use transaction for atomicity (increase timeout for accounting operations)
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // 1. Update Barang
+        // We need to exclude the optional fields that are not part of Barang model
+        const { paymentMethod, supplierId, dueDate, ...barangData } =
+          validatedData;
 
-      const barang = await tx.barang.update({
-        where: { id },
-        data: barangData,
-        include: {
-          lokasi: true,
-        },
-      });
+        const barang = await tx.barang.update({
+          where: { id },
+          data: barangData,
+          include: {
+            lokasi: true,
+          },
+        });
 
-      // 2. Check for stock adjustment
-      const stockDifference = validatedData.stok - currentBarang.stok;
+        // 2. Check for stock adjustment
+        const stockDifference = validatedData.stok - currentBarang.stok;
 
-      // Prevent stock decrease via Edit Item endpoint
-      if (stockDifference < 0) {
-        throw new Error(
-          "Stok tidak dapat dikurangi melalui menu Edit Barang. Gunakan Transaksi Keluar atau Stock Opname.",
-        );
-      }
+        // Prevent stock decrease via Edit Item endpoint
+        if (stockDifference < 0) {
+          throw new Error(
+            "Stok tidak dapat dikurangi melalui menu Edit Barang. Gunakan Transaksi Keluar atau Stock Opname.",
+          );
+        }
 
-      if (stockDifference > 0) {
-        try {
-          const adjustmentAmount =
-            stockDifference * currentBarang.hargaBeli.toNumber();
-          const isIncrease = true;
+        if (stockDifference > 0) {
+          try {
+            const adjustmentAmount =
+              stockDifference * currentBarang.hargaBeli.toNumber();
+            const isIncrease = true;
 
-          // Case A: Stock Increase with Payment Method (Purchase)
-          if (paymentMethod) {
-            const totalNilai = adjustmentAmount;
-            const reason = "PURCHASE";
+            // Case A: Stock Increase with Payment Method (Purchase)
+            if (paymentMethod) {
+              const totalNilai = adjustmentAmount;
+              const reason = "PURCHASE";
 
-            // Create TransaksiMasuk
-            const transaksiMasuk = await tx.transaksiMasuk.create({
-              data: {
-                nomorTransaksi: generateMasukNumber(),
-                barangId: barang.id,
-                qty: stockDifference,
-                hargaBeli: barang.hargaBeli,
-                totalNilai: totalNilai,
-                sumber: supplier || "Stock Update",
-                lokasiId: barang.lokasiId,
-                keterangan: "Penambahan stok via Edit Barang",
-                tanggal: new Date(),
-              },
-            });
-
-            // Create Hutang if Credit
-            if (paymentMethod === "CREDIT") {
-              const nomorHutang = `HTG-${Date.now()}`;
-              await tx.hutang.create({
+              // Create TransaksiMasuk
+              const transaksiMasuk = await tx.transaksiMasuk.create({
                 data: {
-                  nomorHutang,
-                  transaksiMasukId: transaksiMasuk.id,
-                  sumberHutang: supplier || "Unknown",
-                  deskripsi: `Pembelian (Edit) ${barang.nama}`,
-                  totalHutang: totalNilai,
-                  totalBayar: 0,
-                  sisaHutang: totalNilai,
-                  status: "BELUM_LUNAS",
-                  jatuhTempo: dueDate ? new Date(dueDate) : null,
+                  nomorTransaksi: generateMasukNumber(),
+                  barangId: barang.id,
+                  qty: stockDifference,
+                  hargaBeli: barang.hargaBeli,
+                  totalNilai: totalNilai,
+                  supplierId: supplierId,
+                  lokasiId: barang.lokasiId,
+                  keterangan: "Penambahan stok via Edit Barang",
+                  tanggal: new Date(),
                 },
               });
+
+              // Create Hutang if Credit
+              if (paymentMethod === "CREDIT") {
+                const nomorHutang = `HTG-${Date.now()}`;
+                await tx.hutang.create({
+                  data: {
+                    nomorHutang,
+                    transaksiMasukId: transaksiMasuk.id,
+                    supplierId: supplierId,
+                    deskripsi: `Pembelian (Edit) ${barang.nama}`,
+                    totalHutang: totalNilai,
+                    totalBayar: 0,
+                    sisaHutang: totalNilai,
+                    status: "BELUM_LUNAS",
+                    jatuhTempo: dueDate ? new Date(dueDate) : null,
+                  },
+                });
+              }
+
+              // Journal
+              await createJournalEntryForStockAddition(
+                transaksiMasuk.id,
+                totalNilai,
+                reason,
+                session.user.id,
+                paymentMethod,
+                tx,
+              );
+            } else {
+              // Case B: Generic Adjustment (Increase without payment info)
+              // This happens if user just increases the number without filling purchase details (should be prevented by UI validation ideally)
+              await createJournalEntryForStockAdjustment(
+                `ADJ-${barang.id}-${Date.now()}`,
+                adjustmentAmount,
+                isIncrease,
+                session.user.id,
+                tx,
+              );
             }
 
-            // Journal
-            await createJournalEntryForStockAddition(
-              transaksiMasuk.id,
-              totalNilai,
-              reason,
-              session.user.id,
-              paymentMethod,
-              tx,
+            logger.info(
+              `Stock adjustment journal created for ${barang.nama}: +${stockDifference} units`,
             );
-          } else {
-            // Case B: Generic Adjustment (Increase without payment info)
-            // This happens if user just increases the number without filling purchase details (should be prevented by UI validation ideally)
-            await createJournalEntryForStockAdjustment(
-              `ADJ-${barang.id}-${Date.now()}`,
-              adjustmentAmount,
-              isIncrease,
-              session.user.id,
-              tx,
+          } catch (journalError) {
+            logger.error(
+              "Failed to create stock adjustment journal:",
+              journalError,
             );
+            throw journalError;
           }
-
-          logger.info(
-            `Stock adjustment journal created for ${barang.nama}: +${stockDifference} units`,
-          );
-        } catch (journalError) {
-          logger.error(
-            "Failed to create stock adjustment journal:",
-            journalError,
-          );
-          throw journalError;
         }
-      }
 
-      // Log activity
-      await tx.activityLog.create({
-        data: {
-          userId: session.user.id,
-          userName: session.user.name || "",
-          action: "UPDATE",
-          entity: "Barang",
-          entityId: barang.id,
-          description: `Mengupdate barang: ${barang.nama}${stockDifference !== 0 ? ` (stok: ${currentBarang.stok} → ${validatedData.stok})` : ""}`,
-        },
-      });
+        // Log activity
+        await tx.activityLog.create({
+          data: {
+            userId: session.user.id,
+            userName: session.user.name || "",
+            action: "UPDATE",
+            entity: "Barang",
+            entityId: barang.id,
+            description: `Mengupdate barang: ${barang.nama}${stockDifference !== 0 ? ` (stok: ${currentBarang.stok} → ${validatedData.stok})` : ""}`,
+          },
+        });
 
-      return barang;
-    });
+        return barang;
+      },
+      {
+        timeout: 15000, // Increase timeout to 15 seconds for complex accounting operations
+      },
+    );
 
     return NextResponse.json(result);
   } catch (error) {
