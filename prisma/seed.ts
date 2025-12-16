@@ -25,7 +25,7 @@ async function main() {
     update: {},
     create: {
       nama: "Nevi Kasir",
-      username: "Nevi",
+      username: "Gerijaya",
       email: "kasir@finara.com",
       password: await bcrypt.hash("Gerijaya04", 10),
       role: "KASIR",
