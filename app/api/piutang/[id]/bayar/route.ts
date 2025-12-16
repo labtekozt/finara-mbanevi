@@ -82,8 +82,8 @@ export async function POST(
 
       // Update piutang
       // Use toFixed(2) to avoid floating point precision issues
-      const newTotalBayar = Number((totalBayarNum + jumlahBayar));
-      const newSisaPiutang = Number((totalPiutangNum - newTotalBayar));
+      const newTotalBayar = Number(totalBayarNum + jumlahBayar);
+      const newSisaPiutang = Number(totalPiutangNum - newTotalBayar);
       const newStatus = newSisaPiutang <= 0 ? "LUNAS" : "BELUM_LUNAS";
 
       const updatedPiutang = await tx.piutang.update({

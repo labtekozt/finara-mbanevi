@@ -46,10 +46,19 @@ next-env.d.ts
 # Prisma
 /prisma/migrations
 
+# PWA
+/public/sw.js
+/public/sw.js.map
+/public/workbox-*.js
+/public/workbox-*.js.map
+/public/worker-*.js
+/public/worker-*.js.map
+/public/fallback-*.js
+/public/fallback-*.js.map
 
 # Storybook
 /storybook-static
-
+/logs
 # logs
 logs
 *.log

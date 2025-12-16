@@ -33,13 +33,19 @@
   - **Anti-Pattern:** `include: { user: true }` (leaks password hash).
 - **Authorization:** Verify session and permissions in every API route using `getServerSession` and `hasPermission`.
 - **Session Validation (Zombie Sessions):** Always verify the user exists in the DB after checking the session, as the session token might persist after a DB reset.
+
   ```typescript
   const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  
-  const userExists = await prisma.user.findUnique({ where: { id: session.user.id } });
-  if (!userExists) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userExists = await prisma.user.findUnique({
+    where: { id: session.user.id },
+  });
+  if (!userExists)
+    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
   ```
+
 - **Logging:** Use `logger` from `@/lib/logger` instead of `console.log` or `console.error`.
 
 ## 💾 Database & Transactions
@@ -91,7 +97,10 @@
   - **Transactions:** Mock `$transaction` to execute the callback immediately: `(prisma.$transaction as jest.Mock).mockImplementation((cb) => cb(prisma))`.
   - **Session Validation:** You **MUST** mock `prisma.user.findUnique` in every test that hits a protected API route, because the API checks for user existence.
     ```typescript
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: "user-123", username: "test" });
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: "user-123",
+      username: "test",
+    });
     ```
   - **Decimals:** Use `new Prisma.Decimal(val)` for mocked return values to ensure arithmetic methods (`plus`, `times`) work correctly. Avoid simple `{ toNumber: ... }` mocks if the code performs math on the result.
 - **Atomic Updates:** When testing stock updates, mock `updateMany` to return `{ count: 1 }` to simulate successful atomic updates.

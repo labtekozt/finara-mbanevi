@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Loader2, Save, Store } from "lucide-react";
@@ -34,7 +40,7 @@ export default function SettingsTokoPage() {
     try {
       const response = await fetch("/api/settings/toko");
       const data = await response.json();
-      
+
       if (response.ok) {
         setFormData({
           namaToko: data.namaToko || "",
@@ -89,7 +95,10 @@ export default function SettingsTokoPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Pengaturan Toko" description="Kelola informasi toko dan struk pembayaran" />
+      <Header
+        title="Pengaturan Toko"
+        description="Kelola informasi toko dan struk pembayaran"
+      />
 
       <div className="flex-1 p-6 bg-gray-50">
         <div className="max-w-4xl mx-auto">
@@ -128,7 +137,10 @@ export default function SettingsTokoPage() {
                       id="nomorTelepon"
                       value={formData.nomorTelepon}
                       onChange={(e) =>
-                        setFormData({ ...formData, nomorTelepon: e.target.value })
+                        setFormData({
+                          ...formData,
+                          nomorTelepon: e.target.value,
+                        })
                       }
                       placeholder="0812-3456-7890"
                     />
@@ -222,7 +234,10 @@ export default function SettingsTokoPage() {
                     id="includePajak"
                     checked={formData.includePajak}
                     onCheckedChange={(checked) =>
-                      setFormData({ ...formData, includePajak: checked as boolean })
+                      setFormData({
+                        ...formData,
+                        includePajak: checked as boolean,
+                      })
                     }
                   />
                   <Label htmlFor="includePajak" className="cursor-pointer">
@@ -290,21 +305,27 @@ export default function SettingsTokoPage() {
             <CardContent>
               <div className="border rounded-lg p-4 bg-white max-w-sm mx-auto font-mono text-xs">
                 <div className="text-center space-y-1">
-                  <div className="font-bold text-sm">{formData.namaToko || "Nama Toko"}</div>
+                  <div className="font-bold text-sm">
+                    {formData.namaToko || "Nama Toko"}
+                  </div>
                   {formData.alamat && <div>{formData.alamat}</div>}
-                  {formData.nomorTelepon && <div>Telp: {formData.nomorTelepon}</div>}
+                  {formData.nomorTelepon && (
+                    <div>Telp: {formData.nomorTelepon}</div>
+                  )}
                   {formData.email && <div>{formData.email}</div>}
                   {formData.tagline && (
-                    <div className="italic text-gray-600 mt-2">{formData.tagline}</div>
+                    <div className="italic text-gray-600 mt-2">
+                      {formData.tagline}
+                    </div>
                   )}
                 </div>
                 <div className="border-t border-dashed my-2"></div>
-                <div className="text-center text-gray-500">
-                  [Isi Transaksi]
-                </div>
+                <div className="text-center text-gray-500">[Isi Transaksi]</div>
                 <div className="border-t border-dashed my-2"></div>
                 <div className="text-center space-y-1">
-                  <div>{formData.footerText || "Terima kasih atas kunjungan Anda"}</div>
+                  <div>
+                    {formData.footerText || "Terima kasih atas kunjungan Anda"}
+                  </div>
                   <div className="text-xs mt-2">*** SIMPAN STRUK INI ***</div>
                 </div>
               </div>

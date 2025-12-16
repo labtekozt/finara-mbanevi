@@ -1,6 +1,6 @@
 /**
  * Receipt Printer Utility for 58mm Thermal Paper
- * 
+ *
  * Best practices for thermal receipt printing:
  * 1. Use monospace fonts for alignment
  * 2. Paper width: 58mm = ~32 characters at 12pt
@@ -119,12 +119,15 @@ export function generateReceiptHTML(
     body {
       font-family: 'Courier New', Courier, monospace;
       font-size: 11pt;
+      font-weight: 600;
       line-height: 1.3;
       width: 58mm;
       margin: 0 auto;
       padding: 5mm 3mm;
       background: white;
       color: black;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     
     .receipt {
@@ -136,15 +139,17 @@ export function generateReceiptHTML(
     }
     
     .bold {
-      font-weight: bold;
+      font-weight: 700;
     }
     
     .large {
       font-size: 13pt;
+      font-weight: 700;
     }
     
     .small {
       font-size: 9pt;
+      font-weight: 600;
     }
     
     .separator {
@@ -229,7 +234,7 @@ export function generateReceiptHTML(
     }
   </style>
 </head>
-<body>
+<body onload="setTimeout(() => window.print(), 100)">
   <button class="print-button no-print" onclick="window.print()">🖨️ Cetak Struk</button>
   
   <div class="receipt">
@@ -377,6 +382,11 @@ export function printReceipt(data: ReceiptData, settings: StoreSettings) {
     setTimeout(() => {
       printWindow.focus();
       printWindow.print();
+
+      // Auto-close after printing (user can cancel)
+      printWindow.onafterprint = () => {
+        printWindow.close();
+      };
     }, 250);
   };
 }
@@ -416,7 +426,8 @@ export function formatReceiptData(
     subtotal,
     pajak: pajakAmount,
     total,
-    bayar: Number(transaction.bayar) || Number(transaction.jumlahBayar) || total,
+    bayar:
+      Number(transaction.bayar) || Number(transaction.jumlahBayar) || total,
     kembalian: Number(transaction.kembalian) || 0,
     catatan: transaction.catatan,
     belumDiambil: transaction.belumDiambil,

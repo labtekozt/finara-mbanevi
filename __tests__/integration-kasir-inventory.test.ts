@@ -50,7 +50,9 @@ jest.mock("@/lib/prisma", () => {
     $transaction: jest.fn(),
   };
 
-  mockPrisma.$transaction.mockImplementation((callback) => callback(mockPrisma));
+  mockPrisma.$transaction.mockImplementation((callback) =>
+    callback(mockPrisma),
+  );
 
   return { prisma: mockPrisma };
 });

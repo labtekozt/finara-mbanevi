@@ -66,12 +66,12 @@ const menuItems = [
     icon: Package,
     permission: "canAccessInventaris" as const,
   },
-  {
-    title: "Kalkulator Rabat",
-    href: "/kalkulator-rabat",
-    icon: Calculator,
-    permission: "canAccessInventaris" as const,
-  },
+  // {
+  //   title: "Kalkulator Rabat",
+  //   href: "/kalkulator-rabat",
+  //   icon: Calculator,
+  //   permission: "canAccessInventaris" as const,
+  // },
   {
     title: "Retur Pembelian",
     href: "/retur-pembelian",
