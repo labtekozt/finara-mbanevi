@@ -291,9 +291,9 @@ export function generateReceiptHTML(
           (item) => `
         <div style="margin: 1mm 0;">
           <div class="bold">${item.nama}</div>
-          <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 2mm;">
-            <span class="small" style="flex-shrink: 0;">${item.qty} x ${formatCurrency(item.harga, true)}</span>
-            <span class="amount amount-cell ${getAmountClass(item.subtotal)}" style="flex: 1;">Rp${formatCurrency(item.subtotal, true)}</span>
+          <div class="small">${item.qty} x ${formatCurrency(item.harga, true)}</div>
+          <div style="text-align: right; margin-top: 0.5mm;">
+            <span class="amount ${getAmountClass(item.subtotal)}">Rp${formatCurrency(item.subtotal, true)}</span>
           </div>
         </div>
       `,
@@ -305,37 +305,47 @@ export function generateReceiptHTML(
     
     <!-- Totals -->
     <div class="total-section">
-      <div class="total-row">
-        <span>Subtotal:</span>
-        <span class="amount amount-cell ${getAmountClass(subtotal)}">${formatCurrency(subtotal)}</span>
+      <div style="margin: 0.5mm 0;">
+        <div>Subtotal:</div>
+        <div style="text-align: right; margin-top: 0.5mm;">
+          <span class="amount ${getAmountClass(subtotal)}">${formatCurrency(subtotal)}</span>
+        </div>
       </div>
       
       ${
         settings.includePajak && pajak > 0
           ? `
-      <div class="total-row small">
-        <span>Pajak (${settings.pajak}%):</span>
-        <span class="amount-cell ${getAmountClass(pajak)}">${formatCurrency(pajak)}</span>
+      <div class="small" style="margin: 0.5mm 0;">
+        <div>Pajak (${settings.pajak}%):</div>
+        <div style="text-align: right; margin-top: 0.5mm;">
+          <span class="amount ${getAmountClass(pajak)}">${formatCurrency(pajak)}</span>
+        </div>
       </div>
       `
           : ""
       }
       
-      <div class="total-row grand-total" style="align-items: flex-end;">
-        <span style="flex-shrink: 0;">TOTAL:</span>
-        <span class="amount-cell ${getAmountClass(total)}" style="flex: 1;">${formatCurrency(total)}</span>
+      <div class="grand-total" style="margin: 1mm 0;">
+        <div>TOTAL:</div>
+        <div style="text-align: right; margin-top: 0.5mm;">
+          <span class="amount ${getAmountClass(total)}">${formatCurrency(total)}</span>
+        </div>
       </div>
       
       ${
         metodePembayaran === "tunai"
           ? `
-      <div class="total-row">
-        <span style="flex-shrink: 0;">Bayar:</span>
-        <span class="amount-cell ${getAmountClass(bayar)}" style="flex: 1;">${formatCurrency(bayar)}</span>
+      <div style="margin: 0.5mm 0;">
+        <div>Bayar:</div>
+        <div style="text-align: right; margin-top: 0.5mm;">
+          <span class="amount ${getAmountClass(bayar)}">${formatCurrency(bayar)}</span>
+        </div>
       </div>
-      <div class="total-row bold" style="align-items: flex-end;">
-        <span style="flex-shrink: 0;">Kembali:</span>
-        <span class="amount-cell ${getAmountClass(kembalian)}" style="flex: 1;">${formatCurrency(kembalian)}</span>
+      <div class="bold" style="margin: 0.5mm 0;">
+        <div>Kembali:</div>
+        <div style="text-align: right; margin-top: 0.5mm;">
+          <span class="amount ${getAmountClass(kembalian)}">${formatCurrency(kembalian)}</span>
+        </div>
       </div>
       `
           : ""
