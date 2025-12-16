@@ -21,6 +21,9 @@ jest.mock("@/lib/prisma", () => ({
       update: jest.fn(),
       delete: jest.fn(),
     },
+    hutang: {
+      findMany: jest.fn(),
+    },
     transaksiMasuk: {
       groupBy: jest.fn(),
     },
@@ -97,7 +100,13 @@ describe("/api/supplier", () => {
           _count: {
             select: {
               transaksiMasuk: true,
-              hutang: true,
+              hutang: {
+                where: {
+                  status: {
+                    in: ["BELUM_LUNAS", "JATUH_TEMPO"],
+                  },
+                },
+              },
             },
           },
         },
@@ -434,6 +443,11 @@ describe("/api/supplier", () => {
       };
 
       (prisma.supplier.findUnique as jest.Mock).mockResolvedValue(mockSupplier);
+      (prisma.hutang.findMany as jest.Mock).mockResolvedValue([
+        {
+          totalHutang: new Prisma.Decimal(50000),
+        },
+      ]);
       (prisma.transaksiMasuk.groupBy as jest.Mock).mockResolvedValue([]);
 
       const request = new NextRequest(
@@ -447,6 +461,7 @@ describe("/api/supplier", () => {
       expect(response.status).toBe(200);
       expect(data.statistics.totalTransactions).toBe(2);
       expect(data.statistics.totalValue).toBe(150000);
+      expect(data.statistics.totalHutang).toBe(50000);
       expect(data.statistics.totalHutangBelumLunas).toBe(30000);
       expect(data.topProducts).toHaveLength(1);
       expect(data.topProducts[0].totalQty).toBe(15);
