@@ -8,7 +8,10 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10 # Safety timeout as per PRD 4.2
+    # Increased timeout because full build+test+deploy on the remote VPS
+    # can exceed 10 minutes for larger releases (builds, migrations, npm ci, etc.)
+    # Set to 60 minutes — adjust as needed for your infra.
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -31,7 +34,7 @@ jobs:
 
             # Pull latest changes
             echo "🚀 Pulling latest changes..."
-            git pull origin main
+            git pull origin main -f 
 
             # Install dependencies
             # using npm ci for faster, reliable installs (requires package-lock.json)
