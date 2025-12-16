@@ -12,10 +12,10 @@ async function main() {
     where: { username: "admin" },
     update: {},
     create: {
-      nama: "Administrator",
-      username: "admin",
+      nama: "Nevi Administrator",
+      username: "Nevi",
       email: "admin@finara.com",
-      password: await bcrypt.hash("admin123", 10),
+      password: await bcrypt.hash("Imanuel28", 10),
       role: "ADMIN",
     },
   });
@@ -24,35 +24,11 @@ async function main() {
     where: { username: "kasir" },
     update: {},
     create: {
-      nama: "Kasir Toko",
-      username: "kasir",
+      nama: "Nevi Kasir",
+      username: "Nevi",
       email: "kasir@finara.com",
-      password: await bcrypt.hash("kasir123", 10),
+      password: await bcrypt.hash("Gerijaya04", 10),
       role: "KASIR",
-    },
-  });
-
-  const gudang = await prisma.user.upsert({
-    where: { username: "gudang" },
-    update: {},
-    create: {
-      nama: "Petugas Gudang",
-      username: "gudang",
-      email: "gudang@finara.com",
-      password: await bcrypt.hash("gudang123", 10),
-      role: "GUDANG",
-    },
-  });
-
-  const manajer = await prisma.user.upsert({
-    where: { username: "manajer" },
-    update: {},
-    create: {
-      nama: "Manajer Toko",
-      username: "manajer",
-      email: "manajer@finara.com",
-      password: await bcrypt.hash("manajer123", 10),
-      role: "MANAJER",
     },
   });
 
