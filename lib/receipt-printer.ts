@@ -3,10 +3,10 @@
  *
  * Best practices for thermal receipt printing:
  * 1. Use monospace fonts for alignment
- * 2. Paper width: 58mm = ~32 characters at 12pt
+ * 2. Paper width: 50mm effective (58mm with margins) = ~28 characters
  * 3. Avoid colors (thermal printers are monochrome)
  * 4. Use CSS print media queries
- * 5. Keep font size readable (10-12pt)
+ * 5. Keep font size readable (9-11pt)
  */
 
 export interface ReceiptData {
@@ -67,12 +67,23 @@ export function generateReceiptHTML(
     pelanggan,
   } = data;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
+  // Compact currency format for small paper width
+  const formatCurrency = (amount: number, compact = false) => {
+    const formatted = new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: 0,
     }).format(amount);
+    
+    // For compact mode (in tables), remove "Rp" to save space
+    return compact ? formatted : `Rp${formatted}`;
+  };
+
+  // Get responsive font size class based on amount length
+  const getAmountClass = (amount: number) => {
+    const formatted = formatCurrency(amount, true);
+    if (formatted.length > 12) return "x-small"; // > 999 juta
+    if (formatted.length > 10) return "xx-small"; // > 99 juta
+    if (formatted.length > 8) return "small"; // > 9 juta
+    return "";
   };
 
   const formatDate = (date: Date) => {
@@ -82,8 +93,8 @@ export function generateReceiptHTML(
     }).format(new Date(date));
   };
 
-  // Helper to pad text for alignment (58mm = ~32 chars)
-  const LINE_WIDTH = 32;
+  // Helper to pad text for alignment (50mm with margins = ~28 chars)
+  const LINE_WIDTH = 28;
   const padLine = (left: string, right: string) => {
     const spaces = LINE_WIDTH - left.length - right.length;
     return left + " ".repeat(Math.max(0, spaces)) + right;
@@ -102,7 +113,7 @@ export function generateReceiptHTML(
   <style>
     @media print {
       @page {
-        size: 58mm auto;
+        size: 50mm auto;
         margin: 0;
       }
       
@@ -280,9 +291,9 @@ export function generateReceiptHTML(
           (item) => `
         <div style="margin: 1mm 0;">
           <div class="bold">${item.nama}</div>
-          <div style="display: flex; justify-content: space-between;">
-            <span class="small">${item.qty} x ${formatCurrency(item.harga)}</span>
-            <span class="bold">${formatCurrency(item.subtotal)}</span>
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 2mm;">
+            <span class="small" style="flex-shrink: 0;">${item.qty} x ${formatCurrency(item.harga, true)}</span>
+            <span class="amount amount-cell ${getAmountClass(item.subtotal)}" style="flex: 1;">Rp${formatCurrency(item.subtotal, true)}</span>
           </div>
         </div>
       `,
@@ -296,7 +307,7 @@ export function generateReceiptHTML(
     <div class="total-section">
       <div class="total-row">
         <span>Subtotal:</span>
-        <span class="bold">${formatCurrency(subtotal)}</span>
+        <span class="amount amount-cell ${getAmountClass(subtotal)}">${formatCurrency(subtotal)}</span>
       </div>
       
       ${
@@ -304,27 +315,27 @@ export function generateReceiptHTML(
           ? `
       <div class="total-row small">
         <span>Pajak (${settings.pajak}%):</span>
-        <span>${formatCurrency(pajak)}</span>
+        <span class="amount-cell ${getAmountClass(pajak)}">${formatCurrency(pajak)}</span>
       </div>
       `
           : ""
       }
       
-      <div class="total-row grand-total">
-        <span>TOTAL:</span>
-        <span>${formatCurrency(total)}</span>
+      <div class="total-row grand-total" style="align-items: flex-end;">
+        <span style="flex-shrink: 0;">TOTAL:</span>
+        <span class="amount-cell ${getAmountClass(total)}" style="flex: 1;">${formatCurrency(total)}</span>
       </div>
       
       ${
         metodePembayaran === "tunai"
           ? `
       <div class="total-row">
-        <span>Bayar:</span>
-        <span>${formatCurrency(bayar)}</span>
+        <span style="flex-shrink: 0;">Bayar:</span>
+        <span class="amount-cell ${getAmountClass(bayar)}" style="flex: 1;">${formatCurrency(bayar)}</span>
       </div>
-      <div class="total-row bold">
-        <span>Kembali:</span>
-        <span>${formatCurrency(kembalian)}</span>
+      <div class="total-row bold" style="align-items: flex-end;">
+        <span style="flex-shrink: 0;">Kembali:</span>
+        <span class="amount-cell ${getAmountClass(kembalian)}" style="flex: 1;">${formatCurrency(kembalian)}</span>
       </div>
       `
           : ""
