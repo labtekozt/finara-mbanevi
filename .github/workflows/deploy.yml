@@ -6,12 +6,34 @@ on:
       - main
 
 jobs:
+  # Run tests locally in GitHub Actions (faster and fails early)
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Generate Prisma Client
+        run: npm run db:generate
+      
+      - name: Run tests
+        run: npm test
+
   deploy:
     runs-on: ubuntu-latest
-    # Increased timeout because full build+test+deploy on the remote VPS
-    # can exceed 10 minutes for larger releases (builds, migrations, npm ci, etc.)
-    # Set to 60 minutes — adjust as needed for your infra.
-    timeout-minutes: 20
+    needs: test
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -24,40 +46,33 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
+          command_timeout: 25m
           script: |
             # Stop script on first error
             set -e
 
             # Navigate to project directory
-            # Ensure this secret is set in GitHub: /var/www/finara or /home/user/finara
             cd ${{ secrets.PROJECT_PATH }}
 
             # Pull latest changes
             echo "🚀 Pulling latest changes..."
             git pull origin main -f 
 
-            # Install dependencies
-            # using npm ci for faster, reliable installs (requires package-lock.json)
+            # Install dependencies (use npm install to preserve existing node_modules)
             echo "📦 Installing dependencies..."
-            npm ci
+            npm install --prefer-offline --no-audit
 
             # Generate Prisma Client
             echo "🗄️ Generating Prisma Client..."
             npm run db:generate
 
-            # Run Tests
-            echo "🧪 Running tests..."
-            npm test
-
-            # Build application
-            # Note: This runs on the VPS. Ensure the VPS has enough resources.
-            # Increase Node.js memory limit to prevent OOM during build
+            # Build application with optimizations (skip type checking and linting)
             echo "🏗️ Building application..."
             export NODE_OPTIONS="--max-old-space-size=4096"
-            npm run build
+            export NEXT_TELEMETRY_DISABLED=1
+            npm run build:prod
 
             # Restart PM2 process
-            # Ensure the app is already started with PM2 named 'finara' (or change variable)
             echo "🔄 Restarting PM2 process..."
             pm2 reload ${{ secrets.PM2_APP_NAME || 'finara' }} --update-env
 

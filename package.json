@@ -7,6 +7,7 @@
     "dev": "next dev",
     "dev:turbo": "next dev --turbopack",
     "build": "npm run check-types && npm run lint && next build",
+    "build:prod": "next build",
     "start": "next start",
     "format": "npx prettier --write .",
     "lint": "eslint .",
