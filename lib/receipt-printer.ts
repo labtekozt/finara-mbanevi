@@ -67,12 +67,23 @@ export function generateReceiptHTML(
     pelanggan,
   } = data;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
+  // Compact currency format for small paper width
+  const formatCurrency = (amount: number, compact = false) => {
+    const formatted = new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: 0,
     }).format(amount);
+    
+    // For compact mode (in tables), remove "Rp" to save space
+    return compact ? formatted : `Rp${formatted}`;
+  };
+
+  // Get responsive font size class based on amount length
+  const getAmountClass = (amount: number) => {
+    const formatted = formatCurrency(amount, true);
+    if (formatted.length > 12) return "x-small"; // > 999 juta
+    if (formatted.length > 10) return "xx-small"; // > 99 juta
+    if (formatted.length > 8) return "small"; // > 9 juta
+    return "";
   };
 
   const formatDate = (date: Date) => {
@@ -152,6 +163,16 @@ export function generateReceiptHTML(
       font-weight: 600;
     }
     
+    .x-small {
+      font-size: 8pt;
+      font-weight: 600;
+    }
+    
+    .xx-small {
+      font-size: 7pt;
+      font-weight: 600;
+    }
+    
     .separator {
       margin: 3mm 0;
       border: none;
@@ -174,13 +195,28 @@ export function generateReceiptHTML(
     }
     
     .item-qty-price {
-      font-size: 10pt;
+      font-size: 9pt;
       color: #333;
     }
     
     .item-total {
       text-align: right;
-      min-width: 80px;
+      word-break: break-word;
+      max-width: 50%;
+      line-height: 1.2;
+    }
+    
+    .amount {
+      font-weight: 700;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    
+    .amount-cell {
+      text-align: right;
+      word-break: break-word;
+      hyphens: none;
+      min-width: 0;
     }
     
     .total-section {
@@ -192,13 +228,27 @@ export function generateReceiptHTML(
     .total-row {
       display: flex;
       justify-content: space-between;
+      align-items: baseline;
       margin: 1mm 0;
+      gap: 2mm;
     }
     
     .grand-total {
-      font-size: 13pt;
+      font-size: 12pt;
       font-weight: bold;
       margin: 2mm 0;
+    }
+    
+    .grand-total .amount-cell {
+      font-size: 11pt;
+    }
+    
+    .grand-total .x-small {
+      font-size: 9pt;
+    }
+    
+    .grand-total .xx-small {
+      font-size: 8pt;
     }
     
     .footer {
@@ -280,9 +330,9 @@ export function generateReceiptHTML(
           (item) => `
         <div style="margin: 3mm 0;">
           <div class="bold">${item.nama}</div>
-          <div style="display: flex; justify-content: space-between;">
-            <span class="small">${item.qty} x ${formatCurrency(item.harga)}</span>
-            <span class="bold">${formatCurrency(item.subtotal)}</span>
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 2mm;">
+            <span class="small" style="flex-shrink: 0;">${item.qty} x ${formatCurrency(item.harga, true)}</span>
+            <span class="amount amount-cell ${getAmountClass(item.subtotal)}" style="flex: 1;">Rp${formatCurrency(item.subtotal, true)}</span>
           </div>
         </div>
       `,
@@ -296,7 +346,7 @@ export function generateReceiptHTML(
     <div class="total-section">
       <div class="total-row">
         <span>Subtotal:</span>
-        <span class="bold">${formatCurrency(subtotal)}</span>
+        <span class="amount amount-cell ${getAmountClass(subtotal)}">${formatCurrency(subtotal)}</span>
       </div>
       
       ${
@@ -304,27 +354,27 @@ export function generateReceiptHTML(
           ? `
       <div class="total-row small">
         <span>Pajak (${settings.pajak}%):</span>
-        <span>${formatCurrency(pajak)}</span>
+        <span class="amount-cell ${getAmountClass(pajak)}">${formatCurrency(pajak)}</span>
       </div>
       `
           : ""
       }
       
-      <div class="total-row grand-total">
-        <span>TOTAL:</span>
-        <span>${formatCurrency(total)}</span>
+      <div class="total-row grand-total" style="align-items: flex-end;">
+        <span style="flex-shrink: 0;">TOTAL:</span>
+        <span class="amount-cell ${getAmountClass(total)}" style="flex: 1;">${formatCurrency(total)}</span>
       </div>
       
       ${
         metodePembayaran === "tunai"
           ? `
       <div class="total-row">
-        <span>Bayar:</span>
-        <span>${formatCurrency(bayar)}</span>
+        <span style="flex-shrink: 0;">Bayar:</span>
+        <span class="amount-cell ${getAmountClass(bayar)}" style="flex: 1;">${formatCurrency(bayar)}</span>
       </div>
-      <div class="total-row bold">
-        <span>Kembali:</span>
-        <span>${formatCurrency(kembalian)}</span>
+      <div class="total-row bold" style="align-items: flex-end;">
+        <span style="flex-shrink: 0;">Kembali:</span>
+        <span class="amount-cell ${getAmountClass(kembalian)}" style="flex: 1;">${formatCurrency(kembalian)}</span>
       </div>
       `
           : ""
