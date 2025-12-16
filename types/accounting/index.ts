@@ -250,11 +250,13 @@ export interface CashFlowData {
   summary: {
     pemasukan: {
       penjualan: number;
+      pembayaranPiutang: number;
       lainnya: number;
       total: number;
     };
     pengeluaran: {
       pembelian: number;
+      pembayaranHutang: number;
       operasional: number;
       gaji: number;
       lainnya: number;

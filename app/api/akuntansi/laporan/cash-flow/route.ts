@@ -104,12 +104,15 @@ export async function GET(request: Request) {
         })
       : [];
 
-    // Get transaksi kasir
+    // Get transaksi kasir TUNAI only (exclude KREDIT)
     const transaksiKasir = await prisma.transaksiKasir.findMany({
       where: {
         tanggal: {
           gte: startDateTime,
           lte: endDateTime,
+        },
+        metodePembayaran: {
+          not: "KREDIT",
         },
       },
       select: {
@@ -121,6 +124,27 @@ export async function GET(request: Request) {
       },
       orderBy: {
         tanggal: "asc",
+      },
+    });
+
+    // Get pembayaran piutang (receivable payments)
+    const pembayaranPiutang = await prisma.pembayaranPiutang.findMany({
+      where: {
+        tanggalBayar: {
+          gte: startDateTime,
+          lte: endDateTime,
+        },
+      },
+      include: {
+        piutang: {
+          select: {
+            nomorPiutang: true,
+            namaPelanggan: true,
+          },
+        },
+      },
+      orderBy: {
+        tanggalBayar: "asc",
       },
     });
 
@@ -145,16 +169,51 @@ export async function GET(request: Request) {
       },
     });
 
-    // Get transaksi masuk (pembelian/stock in)
+    // Get transaksi masuk with TUNAI payment only (exclude KREDIT purchases)
     const transaksiMasuk = await prisma.transaksiMasuk.findMany({
       where: {
         tanggal: {
           gte: startDateTime,
           lte: endDateTime,
         },
+        hutang: {
+          is: null, // Only include purchases that don't create hutang (meaning they're TUNAI)
+        },
+      },
+      include: {
+        supplier: {
+          select: {
+            nama: true,
+          },
+        },
       },
       orderBy: {
         tanggal: "asc",
+      },
+    });
+
+    // Get pembayaran hutang (debt payments)
+    const pembayaranHutang = await prisma.pembayaranHutang.findMany({
+      where: {
+        tanggalBayar: {
+          gte: startDateTime,
+          lte: endDateTime,
+        },
+      },
+      include: {
+        hutang: {
+          select: {
+            nomorHutang: true,
+            supplier: {
+              select: {
+                nama: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        tanggalBayar: "asc",
       },
     });
 
@@ -168,11 +227,13 @@ export async function GET(request: Request) {
     const summary = {
       pemasukan: {
         penjualan: 0,
+        pembayaranPiutang: 0,
         lainnya: 0,
         total: 0,
       },
       pengeluaran: {
         pembelian: 0,
+        pembayaranHutang: 0,
         operasional: 0,
         gaji: 0,
         lainnya: 0,
@@ -180,7 +241,7 @@ export async function GET(request: Request) {
       },
     };
 
-    // Add transaksi kasir (income)
+    // Add transaksi kasir TUNAI (income - actual cash received)
     transaksiKasir.forEach((t) => {
       const jumlah = t.total.toNumber();
       currentBalance += jumlah;
@@ -189,9 +250,27 @@ export async function GET(request: Request) {
 
       entries.push({
         tanggal: t.tanggal.toISOString(),
-        deskripsi: `Penjualan - ${t.nomorTransaksi}`,
-        kategori: "Penjualan",
+        deskripsi: `Penjualan Tunai - ${t.nomorTransaksi}`,
+        kategori: "Penjualan Tunai",
         referensi: t.nomorTransaksi,
+        tipe: "in",
+        jumlah,
+        saldo: currentBalance,
+      });
+    });
+
+    // Add pembayaran piutang (receivable payments - actual cash received)
+    pembayaranPiutang.forEach((p) => {
+      const jumlah = p.jumlahBayar.toNumber();
+      currentBalance += jumlah;
+      totalPemasukan += jumlah;
+      summary.pemasukan.pembayaranPiutang += jumlah;
+
+      entries.push({
+        tanggal: p.tanggalBayar.toISOString(),
+        deskripsi: `Pembayaran Piutang - ${p.piutang.nomorPiutang} (${p.piutang.namaPelanggan})`,
+        kategori: "Pembayaran Piutang",
+        referensi: p.piutang.nomorPiutang,
         tipe: "in",
         jumlah,
         saldo: currentBalance,
@@ -228,19 +307,38 @@ export async function GET(request: Request) {
       });
     });
 
-    // Add transaksi masuk (purchases - expense)
-    transaksiMasuk.forEach((t: any) => {
+    // Add transaksi masuk TUNAI (purchases - actual cash out)
+    transaksiMasuk.forEach((t) => {
       const jumlah = t.totalNilai.toNumber();
       currentBalance -= jumlah;
       totalPengeluaran += jumlah;
       summary.pengeluaran.pembelian += jumlah;
 
-      const supplierInfo = t.keterangan || t.sumber || "";
+      const supplierInfo = t.supplier?.nama || t.keterangan || "";
       entries.push({
         tanggal: t.tanggal.toISOString(),
-        deskripsi: `Pembelian - ${t.nomorTransaksi}${supplierInfo ? ` (${supplierInfo})` : ""}`,
-        kategori: "Pembelian",
+        deskripsi: `Pembelian Tunai - ${t.nomorTransaksi}${supplierInfo ? ` (${supplierInfo})` : ""}`,
+        kategori: "Pembelian Tunai",
         referensi: t.nomorTransaksi,
+        tipe: "out",
+        jumlah,
+        saldo: currentBalance,
+      });
+    });
+
+    // Add pembayaran hutang (debt payments - actual cash out)
+    pembayaranHutang.forEach((p) => {
+      const jumlah = p.jumlahBayar.toNumber();
+      currentBalance -= jumlah;
+      totalPengeluaran += jumlah;
+      summary.pengeluaran.pembayaranHutang += jumlah;
+
+      const supplierInfo = p.hutang.supplier?.nama || "";
+      entries.push({
+        tanggal: p.tanggalBayar.toISOString(),
+        deskripsi: `Pembayaran Hutang - ${p.hutang.nomorHutang}${supplierInfo ? ` (${supplierInfo})` : ""}`,
+        kategori: "Pembayaran Hutang",
+        referensi: p.hutang.nomorHutang,
         tipe: "out",
         jumlah,
         saldo: currentBalance,

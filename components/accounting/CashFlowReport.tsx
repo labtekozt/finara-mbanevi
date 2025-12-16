@@ -391,9 +391,15 @@ export function CashFlowReport({ className }: CashFlowReportProps) {
                   <CardContent>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Penjualan</span>
+                        <span className="text-muted-foreground">Penjualan Tunai</span>
                         <span className="font-medium">
                           {formatCurrency(data.summary.pemasukan.penjualan)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Pembayaran Piutang</span>
+                        <span className="font-medium">
+                          {formatCurrency(data.summary.pemasukan.pembayaranPiutang)}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -421,9 +427,15 @@ export function CashFlowReport({ className }: CashFlowReportProps) {
                   <CardContent>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Pembelian</span>
+                        <span className="text-muted-foreground">Pembelian Tunai</span>
                         <span className="font-medium">
                           {formatCurrency(data.summary.pengeluaran.pembelian)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Pembayaran Hutang</span>
+                        <span className="font-medium">
+                          {formatCurrency(data.summary.pengeluaran.pembayaranHutang)}
                         </span>
                       </div>
                       <div className="flex justify-between">
