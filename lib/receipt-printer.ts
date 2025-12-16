@@ -80,9 +80,9 @@ export function generateReceiptHTML(
   // Get responsive font size class based on amount length
   const getAmountClass = (amount: number) => {
     const formatted = formatCurrency(amount, true);
-    if (formatted.length > 12) return "x-small"; // > 999 juta
     if (formatted.length > 10) return "xx-small"; // > 99 juta
-    if (formatted.length > 8) return "small"; // > 9 juta
+    if (formatted.length > 8) return "x-small"; // > 9 juta
+    if (formatted.length > 6) return "small"; // > 999 ribu
     return "";
   };
 
@@ -93,8 +93,8 @@ export function generateReceiptHTML(
     }).format(new Date(date));
   };
 
-  // Helper to pad text for alignment (50mm with margins = ~28 chars)
-  const LINE_WIDTH = 28;
+  // Helper to pad text for alignment (50mm with margins = ~26 chars)
+  const LINE_WIDTH = 26;
   const padLine = (left: string, right: string) => {
     const spaces = LINE_WIDTH - left.length - right.length;
     return left + " ".repeat(Math.max(0, spaces)) + right;
@@ -129,12 +129,12 @@ export function generateReceiptHTML(
     
     body {
       font-family: 'Courier New', Courier, monospace;
-      font-size: 9pt;
+      font-size: 8pt;
       font-weight: 600;
       line-height: 1.2;
-      width: 58mm;
+      width: 50mm;
       margin: 0 auto;
-      padding: 1mm 2mm;
+      padding: 1mm 1.5mm;
       background: white;
       color: black;
       -webkit-print-color-adjust: exact;
@@ -160,6 +160,16 @@ export function generateReceiptHTML(
     
     .small {
       font-size: 8pt;
+      font-weight: 600;
+    }
+    
+    .x-small {
+      font-size: 7pt;
+      font-weight: 600;
+    }
+    
+    .xx-small {
+      font-size: 6pt;
       font-weight: 600;
     }
     
@@ -292,7 +302,7 @@ export function generateReceiptHTML(
         <div style="margin: 1mm 0;">
           <div class="bold">${item.nama}</div>
           <div class="small">${item.qty} x ${formatCurrency(item.harga, true)}</div>
-          <div style="text-align: right; margin-top: 0.5mm;">
+          <div style="margin-top: 0.5mm; padding-left: 2mm;">
             <span class="amount ${getAmountClass(item.subtotal)}">Rp${formatCurrency(item.subtotal, true)}</span>
           </div>
         </div>
@@ -307,7 +317,7 @@ export function generateReceiptHTML(
     <div class="total-section">
       <div style="margin: 0.5mm 0;">
         <div>Subtotal:</div>
-        <div style="text-align: right; margin-top: 0.5mm;">
+        <div style="margin-top: 0.5mm; padding-left: 2mm;">
           <span class="amount ${getAmountClass(subtotal)}">${formatCurrency(subtotal)}</span>
         </div>
       </div>
@@ -317,7 +327,7 @@ export function generateReceiptHTML(
           ? `
       <div class="small" style="margin: 0.5mm 0;">
         <div>Pajak (${settings.pajak}%):</div>
-        <div style="text-align: right; margin-top: 0.5mm;">
+        <div style="margin-top: 0.5mm; padding-left: 2mm;">
           <span class="amount ${getAmountClass(pajak)}">${formatCurrency(pajak)}</span>
         </div>
       </div>
@@ -327,7 +337,7 @@ export function generateReceiptHTML(
       
       <div class="grand-total" style="margin: 1mm 0;">
         <div>TOTAL:</div>
-        <div style="text-align: right; margin-top: 0.5mm;">
+        <div style="margin-top: 0.5mm; padding-left: 2mm;">
           <span class="amount ${getAmountClass(total)}">${formatCurrency(total)}</span>
         </div>
       </div>
@@ -337,13 +347,13 @@ export function generateReceiptHTML(
           ? `
       <div style="margin: 0.5mm 0;">
         <div>Bayar:</div>
-        <div style="text-align: right; margin-top: 0.5mm;">
+        <div style="margin-top: 0.5mm; padding-left: 2mm;">
           <span class="amount ${getAmountClass(bayar)}">${formatCurrency(bayar)}</span>
         </div>
       </div>
       <div class="bold" style="margin: 0.5mm 0;">
         <div>Kembali:</div>
-        <div style="text-align: right; margin-top: 0.5mm;">
+        <div style="margin-top: 0.5mm; padding-left: 2mm;">
           <span class="amount ${getAmountClass(kembalian)}">${formatCurrency(kembalian)}</span>
         </div>
       </div>
