@@ -7,48 +7,57 @@ Cash Flow (Arus Kas) hanya mencatat **transaksi kas yang benar-benar melibatkan 
 ## Kategori Pemasukan (Inflow)
 
 ### 1. Penjualan Tunai
+
 - **Sumber:** `TransaksiKasir` dengan `metodePembayaran != 'KREDIT'`
 - **Kriteria:** Hanya transaksi penjualan yang dibayar tunai/langsung
 - **Mengapa:** Uang langsung masuk ke kas perusahaan
 
 ### 2. Pembayaran Piutang
+
 - **Sumber:** `PembayaranPiutang`
 - **Kriteria:** Ketika pelanggan membayar piutangnya
 - **Mengapa:** Piutang adalah aset, bukan kas. Kas baru bertambah saat piutang dibayar
 
 ### 3. Lainnya
+
 - **Sumber:** Pemasukan lain yang akan ditambahkan di masa depan
 - **Contoh:** Pendapatan bunga, penjualan aset, dll
 
 ## Kategori Pengeluaran (Outflow)
 
 ### 1. Pembelian Tunai
+
 - **Sumber:** `TransaksiMasuk` yang **tidak** menghasilkan `Hutang`
 - **Kriteria:** Pembelian barang yang dibayar langsung
 - **Mengapa:** Kas langsung keluar untuk pembelian
 
 ### 2. Pembayaran Hutang
+
 - **Sumber:** `PembayaranHutang`
 - **Kriteria:** Ketika perusahaan membayar hutang ke supplier
 - **Mengapa:** Hutang adalah kewajiban, bukan pengeluaran kas. Kas baru berkurang saat hutang dibayar
 
 ### 3. Operasional
+
 - **Sumber:** `Pengeluaran` dengan kategori: `UTILITAS`, `SEWA`, `PERLENGKAPAN_KANTOR`, `TRANSPORTASI`
 - **Kriteria:** Biaya operasional sehari-hari
 - **Mengapa:** Pengeluaran ini langsung mengurangi kas
 
 ### 4. Gaji
+
 - **Sumber:** `Pengeluaran` dengan kategori: `GAJI_KARYAWAN`
 - **Kriteria:** Pembayaran gaji karyawan
 - **Mengapa:** Kas keluar untuk membayar gaji
 
 ### 5. Lainnya
+
 - **Sumber:** `Pengeluaran` dengan kategori lainnya
 - **Contoh:** Perbaikan, iklan, asuransi, dll
 
 ## Transaksi yang TIDAK Masuk Cash Flow
 
 ### ❌ Penjualan Kredit (Piutang)
+
 ```typescript
 // TransaksiKasir dengan metodePembayaran = 'KREDIT'
 // TIDAK langsung menambah cash flow
@@ -58,6 +67,7 @@ Cash Flow (Arus Kas) hanya mencatat **transaksi kas yang benar-benar melibatkan 
 **Alasan:** Piutang adalah aset, bukan kas. Perusahaan belum menerima uang tunai.
 
 ### ❌ Pembelian Kredit (Hutang)
+
 ```typescript
 // TransaksiMasuk yang menghasilkan Hutang
 // TIDAK langsung mengurangi cash flow
@@ -69,6 +79,7 @@ Cash Flow (Arus Kas) hanya mencatat **transaksi kas yang benar-benar melibatkan 
 ## Implementasi di Kode
 
 ### Query untuk Penjualan Tunai
+
 ```typescript
 const transaksiKasir = await prisma.transaksiKasir.findMany({
   where: {
@@ -79,6 +90,7 @@ const transaksiKasir = await prisma.transaksiKasir.findMany({
 ```
 
 ### Query untuk Pembelian Tunai
+
 ```typescript
 const transaksiMasuk = await prisma.transaksiMasuk.findMany({
   where: {
@@ -89,6 +101,7 @@ const transaksiMasuk = await prisma.transaksiMasuk.findMany({
 ```
 
 ### Query untuk Pembayaran Piutang
+
 ```typescript
 const pembayaranPiutang = await prisma.pembayaranPiutang.findMany({
   where: {
@@ -98,6 +111,7 @@ const pembayaranPiutang = await prisma.pembayaranPiutang.findMany({
 ```
 
 ### Query untuk Pembayaran Hutang
+
 ```typescript
 const pembayaranHutang = await prisma.pembayaranHutang.findMany({
   where: {
@@ -109,6 +123,7 @@ const pembayaranHutang = await prisma.pembayaranHutang.findMany({
 ## Contoh Skenario
 
 ### Skenario 1: Penjualan Kredit
+
 1. **Hari 1:** Penjualan Rp 1.000.000 dengan metode KREDIT
    - ❌ Cash Flow: **TIDAK berubah**
    - ✅ Piutang: **+Rp 1.000.000**
@@ -122,6 +137,7 @@ const pembayaranHutang = await prisma.pembayaranHutang.findMany({
    - ✅ Piutang: **-Rp 500.000** (Lunas)
 
 ### Skenario 2: Pembelian Kredit
+
 1. **Hari 1:** Pembelian barang Rp 2.000.000 dengan metode KREDIT
    - ❌ Cash Flow: **TIDAK berubah**
    - ✅ Hutang: **+Rp 2.000.000**
@@ -138,6 +154,7 @@ const pembayaranHutang = await prisma.pembayaranHutang.findMany({
 ## Kesimpulan
 
 **Cash Flow = Actual Cash Movement**
+
 - ✅ Penjualan Tunai → Kas masuk
 - ✅ Pembayaran Piutang → Kas masuk
 - ✅ Pembelian Tunai → Kas keluar
@@ -145,6 +162,7 @@ const pembayaranHutang = await prisma.pembayaranHutang.findMany({
 - ✅ Pengeluaran Operasional → Kas keluar
 
 **Bukan Cash Flow:**
+
 - ❌ Penjualan Kredit (hanya aset piutang bertambah)
 - ❌ Pembelian Kredit (hanya hutang bertambah, inventaris bertambah)
 

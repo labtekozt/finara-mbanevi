@@ -99,6 +99,16 @@ describe("API: /api/transaksi-kasir", () => {
       id: "user-123",
       username: "testuser",
     });
+
+    // Mock active period for auto period management
+    (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue({
+      id: "period-2024",
+      nama: "Tahun Buku 2024",
+      tanggalMulai: new Date("2024-01-01"),
+      tanggalAkhir: new Date("2024-12-31"),
+      isActive: true,
+      isClosed: false,
+    });
   });
 
   describe("POST Transaction Validation", () => {
@@ -201,6 +211,7 @@ describe("API: /api/transaksi-kasir", () => {
       metodePembayaran: "cash",
       jumlahBayar: 50000,
       kembalian: 30000,
+      tanggal: "2024-06-15T10:00:00.000Z",
     };
 
     test("should process valid transaction successfully", async () => {

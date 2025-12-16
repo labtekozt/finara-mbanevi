@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/permissions";
 import { createJournalEntryForExpense } from "@/lib/accounting-utils";
+import { ensureActivePeriod } from "@/lib/period-management";
 import logger from "@/lib/logger";
 
 // GET /api/pengeluaran - Get all expenses
@@ -96,6 +97,10 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    // Ensure active accounting period (auto-close if needed)
+    const expenseDate = new Date(tanggal);
+    await ensureActivePeriod(expenseDate, session.user.id);
 
     // Create expense and journal entry in transaction
     const result = await prisma.$transaction(async (tx) => {

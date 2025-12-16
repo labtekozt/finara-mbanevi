@@ -11,18 +11,18 @@ if (typeof global.Request === "undefined") {
     method: string;
     headers: Headers;
     body: any;
-    
+
     constructor(input: any, init: any) {
       this._url = input;
       this.method = init?.method || "GET";
       this.headers = new Headers(init?.headers);
       this.body = init?.body;
     }
-    
+
     get url() {
       return this._url;
     }
-    
+
     async json() {
       return JSON.parse(this.body);
     }

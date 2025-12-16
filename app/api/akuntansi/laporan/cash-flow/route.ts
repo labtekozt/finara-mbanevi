@@ -285,8 +285,7 @@ export async function GET(request: Request) {
 
     // Sort entries by date
     entries.sort(
-      (a, b) =>
-        new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime(),
+      (a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime(),
     );
 
     // Recalculate balance in sorted order

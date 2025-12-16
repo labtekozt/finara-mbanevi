@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { generateMasukNumber } from "@/lib/transaction-number";
 import { createJournalEntryForStockAddition } from "@/lib/accounting-utils";
+import { ensureActivePeriod } from "@/lib/period-management";
 import { z } from "zod";
 import logger from "@/lib/logger";
 
@@ -14,6 +15,7 @@ const transaksiMasukSchema = z.object({
   supplierId: z.string().optional(), // Optional because internal adjustment might not have supplier
   lokasiId: z.string().min(1, "Lokasi harus dipilih"),
   keterangan: z.string().optional(),
+  tanggal: z.string().optional(), // Transaction date, defaults to now if not provided
   reason: z.enum(["PURCHASE", "STOCK_OPNAME_SURPLUS", "INTERNAL_ADJUSTMENT"], {
     required_error: "Alasan penambahan stok harus dipilih",
   }),
@@ -103,6 +105,12 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+
+    // Ensure active accounting period (auto-close if needed)
+    const transactionDate = validatedData.tanggal
+      ? new Date(validatedData.tanggal)
+      : new Date();
+    await ensureActivePeriod(transactionDate, session.user.id);
 
     // Create transaction and update stock (increase timeout for accounting operations)
     const transaksi = await prisma.$transaction(

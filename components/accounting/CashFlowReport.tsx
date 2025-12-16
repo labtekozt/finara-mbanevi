@@ -217,7 +217,11 @@ export function CashFlowReport({ className }: CashFlowReportProps) {
               {/* Export Button */}
               <div className="flex items-end">
                 {data && (
-                  <Button onClick={exportPDF} variant="outline" className="w-full">
+                  <Button
+                    onClick={exportPDF}
+                    variant="outline"
+                    className="w-full"
+                  >
                     <Download className="h-4 w-4 mr-2" />
                     Export PDF
                   </Button>
@@ -377,15 +381,21 @@ export function CashFlowReport({ className }: CashFlowReportProps) {
                   <CardContent>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Penjualan Tunai</span>
+                        <span className="text-muted-foreground">
+                          Penjualan Tunai
+                        </span>
                         <span className="font-medium">
                           {formatCurrency(data.summary.pemasukan.penjualan)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Pembayaran Piutang</span>
+                        <span className="text-muted-foreground">
+                          Pembayaran Piutang
+                        </span>
                         <span className="font-medium">
-                          {formatCurrency(data.summary.pemasukan.pembayaranPiutang)}
+                          {formatCurrency(
+                            data.summary.pemasukan.pembayaranPiutang,
+                          )}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -413,15 +423,21 @@ export function CashFlowReport({ className }: CashFlowReportProps) {
                   <CardContent>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Pembelian Tunai</span>
+                        <span className="text-muted-foreground">
+                          Pembelian Tunai
+                        </span>
                         <span className="font-medium">
                           {formatCurrency(data.summary.pengeluaran.pembelian)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Pembayaran Hutang</span>
+                        <span className="text-muted-foreground">
+                          Pembayaran Hutang
+                        </span>
                         <span className="font-medium">
-                          {formatCurrency(data.summary.pengeluaran.pembayaranHutang)}
+                          {formatCurrency(
+                            data.summary.pengeluaran.pembayaranHutang,
+                          )}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -499,7 +515,9 @@ export function CashFlowReport({ className }: CashFlowReportProps) {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Badge variant="outline">{entry.kategori}</Badge>
+                                <Badge variant="outline">
+                                  {entry.kategori}
+                                </Badge>
                               </TableCell>
                               <TableCell
                                 className={`text-right font-medium ${entry.tipe === "in" ? "text-green-600" : "text-red-600"}`}

@@ -39,16 +39,16 @@ export async function GET(request: Request) {
       // Set start date to beginning of day (00:00:00)
       const startDateTime = new Date(startDate);
       startDateTime.setHours(0, 0, 0, 0);
-      
+
       // Set end date to end of day (23:59:59)
       const endDateTime = new Date(endDate);
       endDateTime.setHours(23, 59, 59, 999);
-      
+
       dateFilter = {
         gte: startDateTime,
         lte: endDateTime,
       };
-      
+
       logger.info("Date filter applied for Neraca", {
         startDate,
         endDate,
@@ -99,15 +99,15 @@ export async function GET(request: Request) {
 
         // Build jurnal filter based on available parameters
         const jurnalFilter: any = {};
-        
+
         if (Object.keys(dateFilter).length > 0) {
           jurnalFilter.tanggal = dateFilter;
         }
-        
+
         if (periode) {
           jurnalFilter.periodeId = periode.id;
         }
-        
+
         // Only add jurnal filter if we have conditions
         if (Object.keys(jurnalFilter).length > 0) {
           balanceWhere.jurnal = jurnalFilter;

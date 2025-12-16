@@ -31,6 +31,9 @@ jest.mock("@/lib/prisma", () => ({
     user: {
       findUnique: jest.fn(),
     },
+    periodeAkuntansi: {
+      findFirst: jest.fn(),
+    },
   },
 }));
 
@@ -90,6 +93,16 @@ describe("Transaksi Masuk API", () => {
       username: "testuser",
     });
     (generateMasukNumber as jest.Mock).mockReturnValue("TRX-IN-123");
+
+    // Mock active period for auto period management
+    (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue({
+      id: "period-2024",
+      nama: "Tahun Buku 2024",
+      tanggalMulai: new Date("2024-01-01"),
+      tanggalAkhir: new Date("2024-12-31"),
+      isActive: true,
+      isClosed: false,
+    });
   });
 
   describe("POST /api/transaksi-masuk", () => {
@@ -103,6 +116,7 @@ describe("Transaksi Masuk API", () => {
         keterangan: "Restock",
         reason: "PURCHASE",
         paymentMethod: "CASH",
+        tanggal: "2024-06-15T10:00:00.000Z",
       };
 
       (prisma.transaksiMasuk.create as jest.Mock).mockResolvedValue({
@@ -165,6 +179,7 @@ describe("Transaksi Masuk API", () => {
         lokasiId: "loc-1",
         reason: "PURCHASE",
         paymentMethod: "CREDIT",
+        tanggal: "2024-06-15T10:00:00.000Z",
       };
 
       (prisma.transaksiMasuk.create as jest.Mock).mockResolvedValue({

@@ -1,13 +1,13 @@
 /**
  * Automatic Accounting Period Management
- * 
+ *
  * Best Practices Implementation:
  * 1. Auto-close expired periods when new transactions come in
  * 2. Auto-create new periods for the current fiscal year
  * 3. Transfer net income to retained earnings
  * 4. Copy opening balances (Balance Sheet accounts only)
  * 5. Reset temporary accounts (Income Statement accounts)
- * 
+ *
  * Accounting Cycle:
  * - Permanent Accounts (Balance Sheet): Asset, Liability, Equity → Carry Forward
  * - Temporary Accounts (Income Statement): Revenue, Expense → Reset to 0
@@ -42,7 +42,9 @@ export async function ensureActivePeriod(
 
     // If no active period exists, create one for current year
     if (!activePeriod) {
-      logger.info("No active period found, creating new period for current year");
+      logger.info(
+        "No active period found, creating new period for current year",
+      );
       const newPeriod = await createNewYearPeriod(transactionDate, userId);
       return newPeriod.id;
     }
@@ -194,8 +196,7 @@ async function calculateNetIncome(
 
       // Revenue: Normal balance is CREDIT
       const balance = details.reduce(
-        (sum, detail) =>
-          sum + Number(detail.kredit) - Number(detail.debit),
+        (sum, detail) => sum + Number(detail.kredit) - Number(detail.debit),
         0,
       );
 
@@ -216,8 +217,7 @@ async function calculateNetIncome(
 
       // Expense: Normal balance is DEBIT
       const balance = details.reduce(
-        (sum, detail) =>
-          sum + Number(detail.debit) - Number(detail.kredit),
+        (sum, detail) => sum + Number(detail.debit) - Number(detail.kredit),
         0,
       );
 
@@ -267,7 +267,9 @@ async function createClosingEntries(
   });
 
   if (!retainedEarningsAccount) {
-    logger.warn("Retained Earnings account not found, skipping closing entries");
+    logger.warn(
+      "Retained Earnings account not found, skipping closing entries",
+    );
     return 0;
   }
 
@@ -434,15 +436,13 @@ async function copyOpeningBalances(
       if (akun.tipe === "ASSET") {
         // Asset: Debit increases, Credit decreases
         balance = details.reduce(
-          (sum, detail) =>
-            sum + Number(detail.debit) - Number(detail.kredit),
+          (sum, detail) => sum + Number(detail.debit) - Number(detail.kredit),
           0,
         );
       } else {
         // Liability & Equity: Credit increases, Debit decreases
         balance = details.reduce(
-          (sum, detail) =>
-            sum + Number(detail.kredit) - Number(detail.debit),
+          (sum, detail) => sum + Number(detail.kredit) - Number(detail.debit),
           0,
         );
       }

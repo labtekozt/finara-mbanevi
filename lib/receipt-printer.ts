@@ -72,7 +72,7 @@ export function generateReceiptHTML(
     const formatted = new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: 0,
     }).format(amount);
-    
+
     // For compact mode (in tables), remove "Rp" to save space
     return compact ? formatted : `Rp${formatted}`;
   };

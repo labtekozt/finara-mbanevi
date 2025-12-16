@@ -7,6 +7,7 @@ import {
   createJournalEntryForCompleteSale,
   getActiveAccountingPeriod,
 } from "@/lib/accounting-utils";
+import { ensureActivePeriod } from "@/lib/period-management";
 import { z } from "zod";
 import { serializeDecimal } from "@/lib/utils";
 import logger from "@/lib/logger";
@@ -28,6 +29,7 @@ const transaksiSchema = z.object({
   metodePembayaran: z.string(),
   jumlahBayar: z.number(),
   kembalian: z.number(),
+  tanggal: z.string().optional(), // Transaction date, defaults to now if not provided
   catatan: z.string().optional().nullable(),
   // Data pelanggan untuk kredit atau pending pickup
   namaPelanggan: z.string().optional().nullable(),
@@ -114,6 +116,12 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const validatedData = transaksiSchema.parse(body);
+
+    // Ensure active accounting period (auto-close if needed)
+    const transactionDate = validatedData.tanggal
+      ? new Date(validatedData.tanggal)
+      : new Date();
+    await ensureActivePeriod(transactionDate, session.user.id);
 
     // Helper function to execute transaction logic
     const executeTransaction = async () => {

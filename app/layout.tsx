@@ -59,7 +59,7 @@ export default function RootLayout({
         />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#000000" />
+        <meta name="theme-color" content="#1a1a1a" />
       </head>
       <body
         className={`${poppins.variable} font-sans antialiased`}
