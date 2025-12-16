@@ -4,6 +4,8 @@ import { BalanceSheetData } from "@/types/accounting";
 
 interface UseBalanceSheetOptions {
   periodeId?: string;
+  startDate?: string;
+  endDate?: string;
   autoLoad?: boolean;
 }
 
@@ -17,7 +19,11 @@ export function useBalanceSheet(options: UseBalanceSheetOptions = {}) {
     setError(null);
 
     try {
-      const result = await AccountingService.getBalanceSheet(options.periodeId);
+      const result = await AccountingService.getBalanceSheet(
+        options.periodeId,
+        options.startDate,
+        options.endDate,
+      );
       setData(result);
     } catch (err) {
       setError(
@@ -32,7 +38,7 @@ export function useBalanceSheet(options: UseBalanceSheetOptions = {}) {
     if (options.autoLoad !== false) {
       fetchData();
     }
-  }, [options.periodeId, options.autoLoad]);
+  }, [options.periodeId, options.startDate, options.endDate, options.autoLoad]);
 
   return {
     data,

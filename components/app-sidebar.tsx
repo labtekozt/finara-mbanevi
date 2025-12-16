@@ -143,6 +143,11 @@ const menuItems = [
         icon: FileText,
       },
       {
+        title: "Arus Kas",
+        href: "/akuntansi/cash-flow",
+        icon: TrendingUp,
+      },
+      {
         title: "Penutupan",
         href: "/akuntansi/penutupan",
         icon: Lock,

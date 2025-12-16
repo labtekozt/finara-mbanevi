@@ -387,9 +387,15 @@ export class AccountingService {
   }
 
   // Balance Sheet
-  static async getBalanceSheet(periodeId?: string): Promise<BalanceSheetData> {
+  static async getBalanceSheet(
+    periodeId?: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<BalanceSheetData> {
     const searchParams = new URLSearchParams();
     if (periodeId) searchParams.set("periodeId", periodeId);
+    if (startDate) searchParams.set("startDate", startDate);
+    if (endDate) searchParams.set("endDate", endDate);
 
     const response = await fetch(
       `${this.BASE_URL}/laporan/neraca?${searchParams}`,
@@ -403,9 +409,13 @@ export class AccountingService {
   // Income Statement
   static async getIncomeStatement(
     periodeId?: string,
+    startDate?: string,
+    endDate?: string,
   ): Promise<IncomeStatementData> {
     const searchParams = new URLSearchParams();
     if (periodeId) searchParams.set("periodeId", periodeId);
+    if (startDate) searchParams.set("startDate", startDate);
+    if (endDate) searchParams.set("endDate", endDate);
 
     const response = await fetch(
       `${this.BASE_URL}/laporan/laba-rugi?${searchParams}`,

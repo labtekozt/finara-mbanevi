@@ -22,6 +22,8 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const periodeId = searchParams.get("periodeId");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
 
     // Get period info if specified
     let periode = null;
@@ -29,6 +31,35 @@ export async function GET(request: Request) {
       periode = await prisma.periodeAkuntansi.findUnique({
         where: { id: periodeId },
       });
+    }
+
+    // Determine date filter for transactions
+    let dateFilter: any = {};
+    if (startDate && endDate) {
+      // Set start date to beginning of day (00:00:00)
+      const startDateTime = new Date(startDate);
+      startDateTime.setHours(0, 0, 0, 0);
+      
+      // Set end date to end of day (23:59:59)
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(23, 59, 59, 999);
+      
+      dateFilter = {
+        gte: startDateTime,
+        lte: endDateTime,
+      };
+      
+      logger.info("Date filter applied for Neraca", {
+        startDate,
+        endDate,
+        startDateTime,
+        endDateTime,
+        periodeId,
+      });
+    } else if (periode) {
+      dateFilter = {
+        lte: periode.tanggalAkhir,
+      };
     }
 
     // Get all active balance sheet accounts (ASSET, LIABILITY, EQUITY only)
@@ -61,18 +92,25 @@ export async function GET(request: Request) {
           }
         }
 
-        // Calculate mutations up to period end (or current date if no period)
+        // Calculate mutations with date filter
         const balanceWhere: any = {
           akunId: akun.id,
         };
 
+        // Build jurnal filter based on available parameters
+        const jurnalFilter: any = {};
+        
+        if (Object.keys(dateFilter).length > 0) {
+          jurnalFilter.tanggal = dateFilter;
+        }
+        
         if (periode) {
-          balanceWhere.jurnal = {
-            tanggal: {
-              lte: periode.tanggalAkhir,
-            },
-            periodeId: periode.id,
-          };
+          jurnalFilter.periodeId = periode.id;
+        }
+        
+        // Only add jurnal filter if we have conditions
+        if (Object.keys(jurnalFilter).length > 0) {
+          balanceWhere.jurnal = jurnalFilter;
         }
 
         const details = await prisma.jurnalDetail.findMany({

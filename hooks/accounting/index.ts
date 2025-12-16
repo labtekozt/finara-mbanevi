@@ -7,3 +7,4 @@ export { useTrialBalance } from "./useTrialBalance";
 export { useBalanceSheet } from "./useBalanceSheet";
 export { useIncomeStatement } from "./useIncomeStatement";
 export { useOpeningBalances } from "./useOpeningBalances";
+export { useCashFlow } from "./useCashFlow";

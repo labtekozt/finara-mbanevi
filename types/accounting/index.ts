@@ -228,6 +228,41 @@ export interface SaldoAwal {
   periode: PeriodeAkuntansi;
 }
 
+export interface CashFlowEntry {
+  tanggal: string;
+  deskripsi: string;
+  kategori: string;
+  referensi?: string;
+  tipe: "in" | "out";
+  jumlah: number;
+  saldo: number;
+}
+
+export interface CashFlowData {
+  startDate: string;
+  endDate: string;
+  saldoAwal: number;
+  saldoAkhir: number;
+  totalPemasukan: number;
+  totalPengeluaran: number;
+  netCashFlow: number;
+  entries: CashFlowEntry[];
+  summary: {
+    pemasukan: {
+      penjualan: number;
+      lainnya: number;
+      total: number;
+    };
+    pengeluaran: {
+      pembelian: number;
+      operasional: number;
+      gaji: number;
+      lainnya: number;
+      total: number;
+    };
+  };
+}
+
 export type AccumulationPeriod = "daily" | "monthly" | "yearly";
 export type AccountType =
   | "ASSET"

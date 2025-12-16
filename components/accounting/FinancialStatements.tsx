@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -55,6 +55,55 @@ interface FinancialStatementsProps {
 
 export function FinancialStatements({ className }: FinancialStatementsProps) {
   const [selectedPeriodeId, setSelectedPeriodeId] = useState<string>("ALL");
+  const [filterType, setFilterType] = useState<
+    "all" | "today" | "month" | "year" | "custom"
+  >("all");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+
+  // Calculate date range based on filter type
+  const dateRange = useMemo(() => {
+    const today = new Date();
+    let start = "";
+    let end = "";
+
+    switch (filterType) {
+      case "today":
+        start = today.toISOString().split("T")[0];
+        end = start;
+        console.log("Filter Hari Ini:", { start, end, today });
+        break;
+      case "month":
+        const firstDayOfMonth = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          1,
+        );
+        const lastDayOfMonth = new Date(
+          today.getFullYear(),
+          today.getMonth() + 1,
+          0,
+        );
+        start = firstDayOfMonth.toISOString().split("T")[0];
+        end = lastDayOfMonth.toISOString().split("T")[0];
+        break;
+      case "year":
+        const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
+        const lastDayOfYear = new Date(today.getFullYear(), 11, 31);
+        start = firstDayOfYear.toISOString().split("T")[0];
+        end = lastDayOfYear.toISOString().split("T")[0];
+        break;
+      case "custom":
+        start = startDate;
+        end = endDate;
+        break;
+      default:
+        start = "";
+        end = "";
+    }
+
+    return { start, end };
+  }, [filterType, startDate, endDate]);
 
   const {
     data: balanceSheetData,
@@ -62,7 +111,12 @@ export function FinancialStatements({ className }: FinancialStatementsProps) {
     error: bsError,
     refetch: refetchBS,
   } = useBalanceSheet({
-    periodeId: selectedPeriodeId === "ALL" ? undefined : selectedPeriodeId,
+    periodeId:
+      selectedPeriodeId === "ALL" || filterType !== "all"
+        ? undefined
+        : selectedPeriodeId,
+    startDate: dateRange.start || undefined,
+    endDate: dateRange.end || undefined,
     autoLoad: true,
   });
 
@@ -72,7 +126,12 @@ export function FinancialStatements({ className }: FinancialStatementsProps) {
     error: isError,
     refetch: refetchIS,
   } = useIncomeStatement({
-    periodeId: selectedPeriodeId === "ALL" ? undefined : selectedPeriodeId,
+    periodeId:
+      selectedPeriodeId === "ALL" || filterType !== "all"
+        ? undefined
+        : selectedPeriodeId,
+    startDate: dateRange.start || undefined,
+    endDate: dateRange.end || undefined,
     autoLoad: true,
   });
 
@@ -314,27 +373,101 @@ export function FinancialStatements({ className }: FinancialStatementsProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Period Selector */}
-          <div className="mb-6">
-            <Label htmlFor="periode" className="mb-2">
-              Pilih Periode
-            </Label>
-            <Select
-              value={selectedPeriodeId}
-              onValueChange={setSelectedPeriodeId}
-            >
-              <SelectTrigger className="w-full md:w-64">
-                <SelectValue placeholder="Pilih periode..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Semua Periode</SelectItem>
-                {periods.map((periode: PeriodeAkuntansi) => (
-                  <SelectItem key={periode.id} value={periode.id}>
-                    {periode.nama}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Filters */}
+          <div className="mb-6 space-y-4">
+            {/* Period Selector */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="periode" className="mb-2">
+                  Pilih Periode
+                </Label>
+                <Select
+                  value={selectedPeriodeId}
+                  onValueChange={setSelectedPeriodeId}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih periode..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Semua Periode</SelectItem>
+                    {periods.map((periode: PeriodeAkuntansi) => (
+                      <SelectItem key={periode.id} value={periode.id}>
+                        {periode.nama}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filter Type */}
+              <div>
+                <Label htmlFor="filterType" className="mb-2">
+                  Filter Tanggal
+                </Label>
+                <Select
+                  value={filterType}
+                  onValueChange={(value: any) => setFilterType(value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih filter..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua</SelectItem>
+                    <SelectItem value="today">Hari Ini</SelectItem>
+                    <SelectItem value="month">Bulan Ini</SelectItem>
+                    <SelectItem value="year">Tahun Ini</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Custom Date Range */}
+            {filterType === "custom" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="startDate" className="mb-2">
+                    Tanggal Mulai
+                  </Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="endDate" className="mb-2">
+                    Tanggal Akhir
+                  </Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Filter Info Badge */}
+            {filterType !== "all" && dateRange.start && dateRange.end && (
+              <Card className="bg-blue-50 border-blue-200 p-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Badge variant="secondary">
+                    {filterType === "today" && "Hari Ini"}
+                    {filterType === "month" && "Bulan Ini"}
+                    {filterType === "year" && "Tahun Ini"}
+                    {filterType === "custom" && "Custom Range"}
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    Filter aktif: {dateRange.start} sampai {dateRange.end}
+                  </span>
+                </div>
+              </Card>
+            )}
           </div>
 
           <StyledTabs defaultValue="balance-sheet" className="w-full">

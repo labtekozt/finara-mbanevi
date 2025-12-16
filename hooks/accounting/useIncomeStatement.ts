@@ -4,6 +4,8 @@ import { IncomeStatementData } from "@/types/accounting";
 
 interface UseIncomeStatementOptions {
   periodeId?: string;
+  startDate?: string;
+  endDate?: string;
   autoLoad?: boolean;
 }
 
@@ -19,6 +21,8 @@ export function useIncomeStatement(options: UseIncomeStatementOptions = {}) {
     try {
       const result = await AccountingService.getIncomeStatement(
         options.periodeId,
+        options.startDate,
+        options.endDate,
       );
       setData(result);
     } catch (err) {
@@ -34,7 +38,7 @@ export function useIncomeStatement(options: UseIncomeStatementOptions = {}) {
     if (options.autoLoad !== false) {
       fetchData();
     }
-  }, [options.periodeId, options.autoLoad]);
+  }, [options.periodeId, options.startDate, options.endDate, options.autoLoad]);
 
   return {
     data,
