@@ -3,6 +3,7 @@ import { generateTransactionNumber } from "./transaction-number";
 import { Prisma } from "@prisma/client";
 import logger from "@/lib/logger";
 import { startOfYear, endOfYear } from "date-fns";
+import { ensureActivePeriod } from "./period-management";
 
 // Account codes (these should match your chart of accounts)
 export const ACCOUNT_CODES = {
