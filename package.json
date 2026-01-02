@@ -9,6 +9,7 @@
     "build": "npm run check-types && npm run lint && next build",
     "build:prod": "next build",
     "start": "next start",
+    "postinstall": "prisma generate",
     "format": "npx prettier --write .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
