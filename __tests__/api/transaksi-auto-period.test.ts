@@ -34,7 +34,7 @@ jest.mock("@/lib/prisma", () => ({
       updateMany: jest.fn(),
     },
     barang: { findUnique: jest.fn(), updateMany: jest.fn() },
-    transaksiKasir: { create: jest.fn() },
+    transaksiKasir: { create: jest.fn(), findUnique: jest.fn() },
     itemTransaksi: { create: jest.fn() },
     pengeluaran: { create: jest.fn() },
     transaksiMasuk: { create: jest.fn() },
@@ -53,6 +53,8 @@ jest.mock("next-auth/next", () => ({
 
 jest.mock("@/lib/transaction-number", () => ({
   generateTransactionNumber: jest.fn(() => `TRX-${Date.now()}`),
+  generateKasirNumber: jest.fn(() => `KSR-${Date.now()}`),
+  generateMasukNumber: jest.fn(() => `MSK-${Date.now()}`),
 }));
 
 jest.mock("@/lib/logger", () => ({
@@ -141,7 +143,7 @@ describe("Period Management Integration with Transaction APIs", () => {
         id: "period-2024",
         nama: "Tahun Buku 2024",
         tanggalMulai: new Date("2024-01-01"),
-        tanggalAkhir: new Date("2024-12-31"),
+        tanggalAkhir: new Date("2030-12-31"),
         isActive: true,
         isClosed: false,
       };
@@ -150,12 +152,16 @@ describe("Period Management Integration with Transaction APIs", () => {
         id: "prod-1",
         nama: "Test Product",
         hargaJual: new Prisma.Decimal(10000),
+        hargaBeli: new Prisma.Decimal(5000),
         stok: 100,
         lokasiId: "loc-1",
       };
 
       // Mock period management
       (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue(
+        activePeriod,
+      );
+      (prisma.periodeAkuntansi.findUnique as jest.Mock).mockResolvedValue(
         activePeriod,
       );
 
@@ -165,6 +171,12 @@ describe("Period Management Integration with Transaction APIs", () => {
 
       // Mock transaction creation
       (prisma.transaksiKasir.create as jest.Mock).mockResolvedValue({
+        id: "trx-1",
+        nomorTransaksi: "TRX-001",
+        totalHarga: new Prisma.Decimal(10000),
+        periodeId: "period-2024",
+      });
+      (prisma.transaksiKasir.findUnique as jest.Mock).mockResolvedValue({
         id: "trx-1",
         nomorTransaksi: "TRX-001",
         totalHarga: new Prisma.Decimal(10000),
@@ -232,7 +244,7 @@ describe("Period Management Integration with Transaction APIs", () => {
         id: "period-2024",
         nama: "Tahun Buku 2024",
         tanggalMulai: new Date("2024-01-01"),
-        tanggalAkhir: new Date("2024-12-31"),
+        tanggalAkhir: new Date("2030-12-31"),
         isActive: true,
         isClosed: false,
       };
@@ -240,10 +252,14 @@ describe("Period Management Integration with Transaction APIs", () => {
       (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue(
         activePeriod,
       );
+      (prisma.periodeAkuntansi.findUnique as jest.Mock).mockResolvedValue(
+        activePeriod,
+      );
 
       const product = {
         id: "prod-1",
         hargaJual: new Prisma.Decimal(10000),
+        hargaBeli: new Prisma.Decimal(5000),
         stok: 100,
         lokasiId: "loc-1",
       };
@@ -297,7 +313,7 @@ describe("Period Management Integration with Transaction APIs", () => {
         id: "period-2024",
         nama: "Tahun Buku 2024",
         tanggalMulai: new Date("2024-01-01"),
-        tanggalAkhir: new Date("2024-12-31"),
+        tanggalAkhir: new Date("2030-12-31"),
         isActive: true,
         isClosed: false,
       };
@@ -441,7 +457,7 @@ describe("Period Management Integration with Transaction APIs", () => {
         id: "period-2024",
         nama: "Tahun Buku 2024",
         tanggalMulai: new Date("2024-01-01"),
-        tanggalAkhir: new Date("2024-12-31"),
+        tanggalAkhir: new Date("2030-12-31"),
         isActive: true,
         isClosed: false,
       };
@@ -484,7 +500,7 @@ describe("Period Management Integration with Transaction APIs", () => {
         id: "period-2024",
         nama: "Tahun Buku 2024",
         tanggalMulai: new Date("2024-01-01"),
-        tanggalAkhir: new Date("2024-12-31"),
+        tanggalAkhir: new Date("2030-12-31"),
         isActive: true,
         isClosed: false,
       };
@@ -569,7 +585,7 @@ describe("Period Management Integration with Transaction APIs", () => {
         id: "period-2024",
         nama: "Tahun Buku 2024",
         tanggalMulai: new Date("2024-01-01"),
-        tanggalAkhir: new Date("2024-12-31"),
+        tanggalAkhir: new Date("2030-12-31"),
         isActive: true,
         isClosed: false,
       };
@@ -639,7 +655,7 @@ describe("Period Management Integration with Transaction APIs", () => {
         id: "period-2024",
         nama: "Tahun Buku 2024",
         tanggalMulai: new Date("2024-01-01"),
-        tanggalAkhir: new Date("2024-12-31"),
+        tanggalAkhir: new Date("2030-12-31"),
         isActive: true,
         isClosed: false,
       };
