@@ -34,6 +34,7 @@ jest.mock("@/lib/prisma", () => {
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     akun: {
       findFirst: jest.fn(),
@@ -77,13 +78,15 @@ jest.mock("@/lib/transaction-number", () => ({
   generateTransactionNumber: jest.fn(() => "JR-001"),
 }));
 
+// Mocks removed: period-management and accounting-utils used real implementation with mocked prisma
+
 describe("E2E Integration: Kasir & Inventory with Accounting Cycle", () => {
   const mockUserId = "user-123";
   const mockPeriod = {
     id: "period-1",
     nama: "Periode 2025",
     tanggalMulai: new Date("2025-01-01"),
-    tanggalAkhir: new Date("2025-12-31"),
+    tanggalAkhir: new Date("2030-12-31"), // Future date to prevent auto-close
     isActive: true,
     isClosed: false,
   };
@@ -110,6 +113,9 @@ describe("E2E Integration: Kasir & Inventory with Accounting Cycle", () => {
 
     // Setup default mocks
     (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue(
+      mockPeriod,
+    );
+    (prisma.periodeAkuntansi.findUnique as jest.Mock).mockResolvedValue(
       mockPeriod,
     );
     (prisma.user.findUnique as jest.Mock).mockResolvedValue({

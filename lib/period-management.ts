@@ -32,10 +32,12 @@ interface AutoClosingResult {
 export async function ensureActivePeriod(
   transactionDate: Date,
   userId: string,
+  tx?: Prisma.TransactionClient,
 ): Promise<string> {
+  const client = tx || prisma;
   try {
     // Get current active period
-    const activePeriod = await prisma.periodeAkuntansi.findFirst({
+    const activePeriod = await client.periodeAkuntansi.findFirst({
       where: { isActive: true },
       orderBy: { tanggalMulai: "desc" },
     });
@@ -73,6 +75,7 @@ export async function ensureActivePeriod(
         activePeriod.id,
         transactionDate,
         userId,
+        tx,
       );
 
       return result.newPeriodId;
@@ -98,10 +101,11 @@ async function autoCloseAndCreateNewPeriod(
   oldPeriodId: string,
   transactionDate: Date,
   userId: string,
+  tx?: Prisma.TransactionClient,
 ): Promise<AutoClosingResult> {
-  return await prisma.$transaction(async (tx) => {
+  const executeLogic = async (client: Prisma.TransactionClient) => {
     // 1. Get old period
-    const oldPeriod = await tx.periodeAkuntansi.findUnique({
+    const oldPeriod = await client.periodeAkuntansi.findUnique({
       where: { id: oldPeriodId },
     });
 
@@ -112,7 +116,11 @@ async function autoCloseAndCreateNewPeriod(
     if (oldPeriod.isClosed) {
       logger.info("Period is already closed, skipping auto-close");
       // Just create new period
-      const newPeriod = await createNewYearPeriod(transactionDate, userId);
+      const newPeriod = await createNewYearPeriod(
+        transactionDate,
+        userId,
+        client,
+      );
       return {
         oldPeriodId: oldPeriod.id,
         newPeriodId: newPeriod.id,
@@ -122,18 +130,18 @@ async function autoCloseAndCreateNewPeriod(
     }
 
     // 2. Calculate net income for old period
-    const netIncomeData = await calculateNetIncome(oldPeriodId, tx);
+    const netIncomeData = await calculateNetIncome(oldPeriodId, client);
 
     // 3. Create closing entries
     const closingEntriesCount = await createClosingEntries(
       oldPeriod,
       netIncomeData,
       userId,
-      tx,
+      client,
     );
 
     // 4. Mark old period as closed
-    await tx.periodeAkuntansi.update({
+    await client.periodeAkuntansi.update({
       where: { id: oldPeriodId },
       data: {
         isClosed: true,
@@ -142,10 +150,14 @@ async function autoCloseAndCreateNewPeriod(
     });
 
     // 5. Create new period
-    const newPeriod = await createNewYearPeriod(transactionDate, userId, tx);
+    const newPeriod = await createNewYearPeriod(
+      transactionDate,
+      userId,
+      client,
+    );
 
     // 6. Copy opening balances (Balance Sheet accounts only)
-    await copyOpeningBalances(oldPeriodId, newPeriod.id, tx);
+    await copyOpeningBalances(oldPeriodId, newPeriod.id, client);
 
     logger.info(
       `Auto-closed period ${oldPeriod.nama} and created new period ${newPeriod.nama}`,
@@ -157,7 +169,15 @@ async function autoCloseAndCreateNewPeriod(
       netIncome: netIncomeData.netIncome,
       closingEntriesCreated: closingEntriesCount,
     };
-  });
+  };
+
+  if (tx) {
+    return await executeLogic(tx);
+  } else {
+    return await prisma.$transaction(async (newTx) => {
+      return await executeLogic(newTx);
+    });
+  }
 }
 
 /**
@@ -353,7 +373,7 @@ async function createClosingEntries(
 /**
  * Create new year period
  */
-async function createNewYearPeriod(
+export async function createNewYearPeriod(
   referenceDate: Date,
   userId: string,
   tx?: Prisma.TransactionClient,
@@ -407,7 +427,7 @@ async function createNewYearPeriod(
  * Copy opening balances from old period to new period
  * Only for Balance Sheet accounts (Asset, Liability, Equity)
  */
-async function copyOpeningBalances(
+export async function copyOpeningBalances(
   oldPeriodId: string,
   newPeriodId: string,
   tx: Prisma.TransactionClient,

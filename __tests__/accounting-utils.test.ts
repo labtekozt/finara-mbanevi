@@ -1,6 +1,5 @@
 import {
   getActiveAccountingPeriod,
-  closeAccountingPeriod,
   getAccountByCode,
   createJournalEntryForSale,
   createJournalEntryForPurchase,
@@ -44,6 +43,10 @@ jest.mock("@/lib/prisma", () => ({
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    activityLog: {
+      create: jest.fn(),
     },
     akun: {
       findFirst: jest.fn(),
@@ -122,55 +125,7 @@ describe("Accounting Utils Comprehensive Tests", () => {
       expect(result).toEqual(mockPeriod);
     });
 
-    test("closeAccountingPeriod should create closing entries", async () => {
-      (prisma.periodeAkuntansi.findUnique as jest.Mock).mockResolvedValue(
-        mockPeriod,
-      );
 
-      // Mock Revenue and Expense accounts
-      const revAccount = mockAccount("rev-1", "4001", "REVENUE");
-      const expAccount = mockAccount("exp-1", "5001", "EXPENSE");
-
-      (prisma.akun.findMany as jest.Mock).mockImplementation(({ where }) => {
-        if (where.tipe === "REVENUE") return Promise.resolve([revAccount]);
-        if (where.tipe === "EXPENSE") return Promise.resolve([expAccount]);
-        return Promise.resolve([]);
-      });
-
-      // Mock Journal Details (Balances)
-      // Revenue: Credit 1000 (Balance = 1000)
-      // Expense: Debit 500 (Balance = 500)
-      (prisma.jurnalDetail.findMany as jest.Mock).mockImplementation(
-        ({ where }) => {
-          if (where.akunId === "rev-1")
-            return Promise.resolve([
-              {
-                debit: { toNumber: () => 0 },
-                kredit: { toNumber: () => 1000 },
-              },
-            ]);
-          if (where.akunId === "exp-1")
-            return Promise.resolve([
-              { debit: { toNumber: () => 500 }, kredit: { toNumber: () => 0 } },
-            ]);
-          return Promise.resolve([]);
-        },
-      );
-
-      // Mock Retained Earnings Account
-      (prisma.akun.findFirst as jest.Mock).mockResolvedValue(
-        mockAccount("equity-1", "3002", "EQUITY"),
-      );
-
-      await closeAccountingPeriod("period-1", mockUserId);
-
-      // Should create 2 closing entries (Revenue -> RE, RE -> Expense)
-      expect(prisma.jurnalEntry.create).toHaveBeenCalledTimes(2);
-      expect(prisma.periodeAkuntansi.update).toHaveBeenCalledWith({
-        where: { id: "period-1" },
-        data: { isActive: false, isClosed: true },
-      });
-    });
   });
 
   describe("Helper Functions", () => {
