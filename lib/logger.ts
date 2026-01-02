@@ -24,8 +24,9 @@ const transports: winston.transport[] = [
   }),
 ];
 
-// Add file transports only in production or if explicitly enabled
-if (process.env.NODE_ENV === "production") {
+// Add file transports only in non-serverless environments
+// Vercel and other serverless platforms have read-only filesystems
+if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
   transports.push(
     // Error logs
     new winston.transports.DailyRotateFile({
