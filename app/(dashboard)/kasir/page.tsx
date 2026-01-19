@@ -99,6 +99,9 @@ export default function KasirPage() {
     nomorHp: "",
     catatan: "",
   });
+  // Nama customer dan catatan penjualan untuk semua tipe pembayaran
+  const [namaCustomer, setNamaCustomer] = useState("");
+  const [catatanPenjualan, setCatatanPenjualan] = useState("");
 
   // Calculations
   const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
@@ -319,7 +322,7 @@ export default function KasirPage() {
               ? dataPelanggan.nama
               : belumDiambil
                 ? dataPendingPickup.nama
-                : null,
+                : namaCustomer || null,
           nomorHpPelanggan:
             metodePembayaran === "kredit"
               ? dataPelanggan.nomorHp
@@ -330,7 +333,7 @@ export default function KasirPage() {
             metodePembayaran === "kredit" ? dataPelanggan.alamat : null,
           // Pending pickup data
           belumDiambil,
-          catatan: belumDiambil ? dataPendingPickup.catatan : null,
+          catatan: belumDiambil ? dataPendingPickup.catatan : catatanPenjualan || null,
         }),
       });
 
@@ -358,6 +361,8 @@ export default function KasirPage() {
       setDataPelanggan({ nama: "", nomorHp: "", alamat: "" });
       setDataPendingPickup({ nama: "", nomorHp: "", catatan: "" });
       setBelumDiambil(false);
+      setNamaCustomer("");
+      setCatatanPenjualan("");
       setMetodePembayaran("tunai");
       fetchBarang(); // Refresh stock
       toast.success("Transaksi berhasil!");
@@ -829,6 +834,38 @@ export default function KasirPage() {
                               })
                             }
                             placeholder="Alamat lengkap"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Form Nama Customer dan Catatan Penjualan untuk semua tipe pembayaran */}
+                    {metodePembayaran !== "kredit" && !belumDiambil && (
+                      <div className="space-y-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="text-sm font-medium text-blue-800">
+                          Informasi Pelanggan (Opsional)
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="nama-customer">Nama Customer</Label>
+                          <Input
+                            id="nama-customer"
+                            value={namaCustomer}
+                            onChange={(e) => setNamaCustomer(e.target.value)}
+                            placeholder="Nama customer (opsional)"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="catatan-penjualan">
+                            Catatan Penjualan
+                          </Label>
+                          <Textarea
+                            id="catatan-penjualan"
+                            value={catatanPenjualan}
+                            onChange={(e) =>
+                              setCatatanPenjualan(e.target.value)
+                            }
+                            placeholder="Catatan tambahan untuk transaksi ini..."
+                            rows={2}
                           />
                         </div>
                       </div>

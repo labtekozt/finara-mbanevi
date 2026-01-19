@@ -50,6 +50,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  ShoppingCart,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -93,11 +94,37 @@ interface TransaksiKeluar {
   lokasi: Lokasi;
 }
 
+interface ItemTransaksi {
+  id: string;
+  namaBarang: string;
+  qty: number;
+  hargaSatuan: number;
+  subtotal: number;
+  barang: {
+    satuan: string;
+  };
+}
+
+interface TransaksiKasir {
+  id: string;
+  nomorTransaksi: string;
+  tanggal: string;
+  total: number;
+  metodePembayaran: string;
+  namaPelanggan?: string;
+  catatan?: string;
+  kasir: {
+    nama: string;
+  };
+  itemTransaksi: ItemTransaksi[];
+}
+
 export default function TransaksiPage() {
   const [barang, setBarang] = useState<Barang[]>([]);
   const [lokasi, setLokasi] = useState<Lokasi[]>([]);
   const [transaksiMasuk, setTransaksiMasuk] = useState<TransaksiMasuk[]>([]);
   const [transaksiKeluar, setTransaksiKeluar] = useState<TransaksiKeluar[]>([]);
+  const [transaksiKasir, setTransaksiKasir] = useState<TransaksiKasir[]>([]);
   const [loading, setLoading] = useState(false);
   const [dialogType, setDialogType] = useState<"masuk" | "keluar" | null>(null);
   const [sortColumn, setSortColumn] = useState<string>("tanggal");
@@ -180,17 +207,19 @@ export default function TransaksiPage() {
   async function fetchData() {
     try {
       setLoading(true);
-      const [barangRes, lokasiRes, masukRes, keluarRes] = await Promise.all([
+      const [barangRes, lokasiRes, masukRes, keluarRes, kasirRes] = await Promise.all([
         fetch("/api/barang"),
         fetch("/api/lokasi"),
         fetch("/api/transaksi-masuk"),
         fetch("/api/transaksi-keluar"),
+        fetch("/api/transaksi-kasir"),
       ]);
 
       setBarang(await barangRes.json());
       setLokasi(await lokasiRes.json());
       setTransaksiMasuk(await masukRes.json());
       setTransaksiKeluar(await keluarRes.json());
+      setTransaksiKasir(await kasirRes.json());
     } catch (error) {
       toast.error("Gagal memuat data");
     } finally {
@@ -317,7 +346,7 @@ export default function TransaksiPage() {
 
         {/* Transactions Tabs */}
         <StyledTabs defaultValue="masuk">
-          <StyledTabsList className="grid w-full grid-cols-2">
+          <StyledTabsList className="grid w-full grid-cols-3">
             <StyledTabsTrigger value="masuk">
               <TrendingUp className="mr-2 h-4 w-4" />
               Barang Masuk ({transaksiMasuk.length})
@@ -325,6 +354,10 @@ export default function TransaksiPage() {
             <StyledTabsTrigger value="keluar">
               <TrendingDown className="mr-2 h-4 w-4" />
               Barang Keluar ({transaksiKeluar.length})
+            </StyledTabsTrigger>
+            <StyledTabsTrigger value="kasir">
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Transaksi Kasir ({transaksiKasir.length})
             </StyledTabsTrigger>
           </StyledTabsList>
 
@@ -652,6 +685,115 @@ export default function TransaksiPage() {
                             </TableCell>
                             <TableCell>{tr.tujuan}</TableCell>
                             <TableCell>{tr.lokasi.namaLokasi}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Transaksi Kasir Tab */}
+          <TabsContent value="kasir">
+            <Card>
+              <CardHeader>
+                <CardTitle>Riwayat Transaksi Kasir</CardTitle>
+                <CardDescription>
+                  Riwayat barang keluar dari transaksi kasir dengan informasi customer
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>No. Transaksi</TableHead>
+                        <TableHead>Tanggal</TableHead>
+                        <TableHead>Barang</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Metode</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Catatan</TableHead>
+                        <TableHead>Kasir</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {transaksiKasir.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center">
+                            Belum ada transaksi
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        transaksiKasir.map((tr) => (
+                          <TableRow key={tr.id}>
+                            <TableCell className="font-medium">
+                              {tr.nomorTransaksi}
+                            </TableCell>
+                            <TableCell>
+                              {format(new Date(tr.tanggal), "dd/MM/yyyy HH:mm")}
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-xs">
+                                {tr.itemTransaksi.map((item, idx) => (
+                                  <div key={item.id} className="text-xs">
+                                    {item.namaBarang} ({item.qty} {item.barang.satuan})
+                                    {idx < tr.itemTransaksi.length - 1 && ", "}
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {tr.namaPelanggan ? (
+                                <span className="text-sm font-medium">
+                                  {tr.namaPelanggan}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">
+                                  -
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  tr.metodePembayaran === "tunai"
+                                    ? "default"
+                                    : tr.metodePembayaran === "transfer"
+                                      ? "secondary"
+                                      : "destructive"
+                                }
+                              >
+                                {tr.metodePembayaran}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-semibold">
+                              <div
+                                className="truncate"
+                                title={`Rp ${tr.total.toLocaleString("id-ID")}`}
+                              >
+                                Rp {tr.total.toLocaleString("id-ID")}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {tr.catatan ? (
+                                <div
+                                  className="max-w-xs text-xs truncate"
+                                  title={tr.catatan}
+                                >
+                                  {tr.catatan}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">
+                                  -
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {tr.kasir.nama}
+                            </TableCell>
                           </TableRow>
                         ))
                       )}
