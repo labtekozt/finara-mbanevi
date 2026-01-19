@@ -102,6 +102,7 @@ model TransaksiKasir {
   
   kasir         User            @relation(fields: [kasirId], references: [id])
   itemTransaksi ItemTransaksi[]
+  transaksiKeluar TransaksiKeluar[]
   piutang       Piutang?
   
   @@index([tanggal])
@@ -190,15 +191,19 @@ model TransaksiKeluar {
   tujuan          String
   lokasiId        String
   keterangan      String?
+  // Relasi ke TransaksiKasir jika transaksi ini berasal dari kasir
+  transaksiKasirId String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
-  barang Barang @relation(fields: [barangId], references: [id])
-  lokasi Lokasi @relation(fields: [lokasiId], references: [id])
+  barang         Barang          @relation(fields: [barangId], references: [id])
+  lokasi         Lokasi          @relation(fields: [lokasiId], references: [id])
+  transaksiKasir TransaksiKasir? @relation(fields: [transaksiKasirId], references: [id])
   
   @@index([tanggal])
   @@index([barangId])
   @@index([lokasiId])
+  @@index([transaksiKasirId])
   @@map("transaksi_keluar")
 }
 

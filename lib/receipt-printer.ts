@@ -279,14 +279,21 @@ export function generateReceiptHTML(
     </div>
     
     ${
-      belumDiambil && pelanggan
+      pelanggan
+        ? `
+    <div class="small">
+      <div>${padLine("Pelanggan:", pelanggan.nama)}</div>
+      ${pelanggan.nomorHp ? `<div>${padLine("HP:", pelanggan.nomorHp)}</div>` : ""}
+    </div>
+    `
+        : ""
+    }
+    
+    ${
+      belumDiambil
         ? `
     <div class="center">
       <span class="badge">BELUM DIAMBIL</span>
-    </div>
-    <div class="small">
-      <div>${padLine("Nama:", pelanggan.nama)}</div>
-      <div>${padLine("HP:", pelanggan.nomorHp)}</div>
     </div>
     `
         : ""
@@ -463,11 +470,11 @@ export function formatReceiptData(
     catatan: transaction.catatan,
     belumDiambil: transaction.belumDiambil,
     pelanggan:
-      transaction.pelangganNama || transaction.namaPelanggan
+      transaction.namaPelanggan || transaction.pelangganNama
         ? {
-            nama: transaction.pelangganNama || transaction.namaPelanggan,
+            nama: transaction.namaPelanggan || transaction.pelangganNama,
             nomorHp:
-              transaction.pelangganHp || transaction.nomorHpPelanggan || "",
+              transaction.nomorHpPelanggan || transaction.pelangganHp || "",
           }
         : undefined,
   };
