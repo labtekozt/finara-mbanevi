@@ -16,7 +16,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { belumDiambil } = body;
+    const { belumDiambil, catatan } = body;
 
     if (typeof belumDiambil !== "boolean") {
       return NextResponse.json(
@@ -25,9 +25,18 @@ export async function PATCH(
       );
     }
 
+    const updateData: { belumDiambil: boolean; catatan?: string } = {
+      belumDiambil,
+    };
+
+    // Update catatan if provided
+    if (catatan !== undefined) {
+      updateData.catatan = catatan;
+    }
+
     const transaksi = await prisma.transaksiKasir.update({
       where: { id },
-      data: { belumDiambil },
+      data: updateData,
     });
 
     // Log activity
