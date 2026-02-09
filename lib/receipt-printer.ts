@@ -384,10 +384,6 @@ export function generateReceiptHTML(
     <!-- Footer -->
     <div class="footer center small">
       ${settings.footerText || "Terima kasih atas kunjungan Anda"}
-      <div style="margin-top: 1mm;">
-        Barang yang sudah dibeli tidak dapat<br>
-        dikembalikan kecuali ada kesepakatan
-      </div>
     </div>
     
     <div class="center" style="margin-top: 2mm;">
