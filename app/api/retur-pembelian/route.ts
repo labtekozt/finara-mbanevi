@@ -9,7 +9,7 @@ import logger from "@/lib/logger";
 
 const returPembelianSchema = z.object({
   transaksiMasukId: z.string().min(1, "Transaksi pembelian harus dipilih"),
-  qty: z.number().int().positive("Jumlah harus lebih dari 0"),
+  qty: z.number().positive("Jumlah harus lebih dari 0"),
   alasan: z.string().min(1, "Alasan retur harus diisi"),
   catatan: z.string().optional(),
 });
@@ -100,14 +100,14 @@ export async function POST(request: NextRequest) {
     });
 
     const alreadyReturnedQty = previousReturns.reduce(
-      (sum, retur) => sum + Math.abs(retur.qty),
+      (sum, retur) => sum + Math.abs(retur.qty.toNumber()),
       0,
     );
 
-    if (alreadyReturnedQty + validatedData.qty > originalTransaksi.qty) {
+    if (alreadyReturnedQty + validatedData.qty > originalTransaksi.qty.toNumber()) {
       return NextResponse.json(
         {
-          error: `Jumlah retur (${validatedData.qty}) melebihi sisa yang bisa diretur (Sisa: ${originalTransaksi.qty - alreadyReturnedQty})`,
+          error: `Jumlah retur (${validatedData.qty}) melebihi sisa yang bisa diretur (Sisa: ${originalTransaksi.qty.toNumber() - alreadyReturnedQty})`,
         },
         { status: 400 },
       );

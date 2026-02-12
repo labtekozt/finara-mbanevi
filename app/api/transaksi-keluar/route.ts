@@ -9,7 +9,7 @@ import logger from "@/lib/logger";
 
 const transaksiKeluarSchema = z.object({
   barangId: z.string().min(1, "Barang harus dipilih"),
-  qty: z.number().int().positive("Jumlah harus lebih dari 0"),
+  qty: z.number().positive("Jumlah harus lebih dari 0"),
   tujuan: z.string().min(1, "Tujuan barang harus diisi"),
   lokasiId: z.string().min(1, "Lokasi harus dipilih"),
   keterangan: z.string().optional(),
@@ -93,10 +93,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (barang.stok < validatedData.qty) {
+    if (barang.stok.toNumber() < validatedData.qty) {
       return NextResponse.json(
         {
-          error: `Stok ${barang.nama} tidak cukup. Tersedia: ${barang.stok} ${barang.satuan}`,
+          error: `Stok ${barang.nama} tidak cukup. Tersedia: ${barang.stok.toNumber()} ${barang.satuan}`,
         },
         { status: 400 },
       );

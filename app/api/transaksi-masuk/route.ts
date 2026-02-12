@@ -10,7 +10,7 @@ import logger from "@/lib/logger";
 
 const transaksiMasukSchema = z.object({
   barangId: z.string().min(1, "Barang harus dipilih"),
-  qty: z.number().int().positive("Jumlah harus lebih dari 0"),
+  qty: z.number().positive("Jumlah harus lebih dari 0"),
   hargaBeli: z.number().min(0, "Harga beli tidak boleh negatif"),
   supplierId: z.string().optional(), // Optional because internal adjustment might not have supplier
   lokasiId: z.string().min(1, "Lokasi harus dipilih"),

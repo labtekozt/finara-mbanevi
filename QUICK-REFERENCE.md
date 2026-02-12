@@ -244,6 +244,30 @@ export const permissions = {
 
 ## Common Tasks
 
+### Decimal Quantity Support (NEW ✨)
+
+FINARA now supports **fractional quantities** for products sold by weight/volume:
+
+```typescript
+// Example: Sell 0.5 kg of rice
+qty: 0.5  // ✅ Supported!
+qty: 0.25 // ✅ Quarter kg
+qty: 1.75 // ✅ 1.75 liters
+```
+
+**Quick Guide:**
+- Minimum: 0.25
+- Step: 0.25 (for increment buttons)
+- Input: Any decimal value
+- See: `docs/DECIMAL_QTY_USER_GUIDE.md`
+
+**After pulling this feature:**
+```bash
+npm run db:generate
+npm run db:push
+npm run dev
+```
+
 ### Add New User Role
 
 1. Update `prisma/schema.prisma`:

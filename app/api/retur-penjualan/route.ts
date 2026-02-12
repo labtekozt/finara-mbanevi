@@ -13,7 +13,7 @@ const returPenjualanSchema = z.object({
     .array(
       z.object({
         barangId: z.string(),
-        qty: z.number().int().positive(),
+        qty: z.number().positive(),
       }),
     )
     .min(1, "Minimal 1 item harus diretur"),
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
           : null,
       qty:
         transaksi.itemTransaksi.length > 0
-          ? Math.abs(transaksi.itemTransaksi[0].qty)
+          ? Math.abs(transaksi.itemTransaksi[0].qty.toNumber())
           : 0,
       hargaJual:
         transaksi.itemTransaksi.length > 0
@@ -186,14 +186,14 @@ export async function POST(request: NextRequest) {
           (item) => item.barangId === returnItem.barangId,
         );
         if (prevItem) {
-          alreadyReturnedQty += Math.abs(prevItem.qty);
+          alreadyReturnedQty += Math.abs(prevItem.qty.toNumber());
         }
       }
 
-      if (alreadyReturnedQty + returnItem.qty > originalItem.qty) {
+      if (alreadyReturnedQty + returnItem.qty > originalItem.qty.toNumber()) {
         return NextResponse.json(
           {
-            error: `Jumlah retur barang ${originalItem.namaBarang} (${returnItem.qty}) melebihi sisa yang bisa diretur (Sisa: ${originalItem.qty - alreadyReturnedQty})`,
+            error: `Jumlah retur barang ${originalItem.namaBarang} (${returnItem.qty}) melebihi sisa yang bisa diretur (Sisa: ${originalItem.qty.toNumber() - alreadyReturnedQty})`,
           },
           { status: 400 },
         );

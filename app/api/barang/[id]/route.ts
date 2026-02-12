@@ -126,7 +126,7 @@ export async function PUT(
         });
 
         // 2. Check for stock adjustment
-        const stockDifference = validatedData.stok - currentBarang.stok;
+        const stockDifference = validatedData.stok - currentBarang.stok.toNumber();
 
         // Prevent stock decrease via Edit Item endpoint
         if (stockDifference < 0) {

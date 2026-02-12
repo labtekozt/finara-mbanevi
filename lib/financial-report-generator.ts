@@ -32,7 +32,7 @@ export class FinancialReportGenerator {
     let totalCOGS = 0;
     for (const trans of salesTransactions) {
       for (const item of trans.itemTransaksi) {
-        totalCOGS += item.qty * item.hargaSatuan.toNumber();
+        totalCOGS += item.qty.toNumber() * item.hargaSatuan.toNumber();
       }
     }
 
@@ -57,7 +57,7 @@ export class FinancialReportGenerator {
     let totalCash = 0;
     for (const trans of salesTransactions) {
       for (const item of trans.itemTransaksi) {
-        totalCash += item.qty * item.hargaSatuan.toNumber();
+        totalCash += item.qty.toNumber() * item.hargaSatuan.toNumber();
       }
     }
 

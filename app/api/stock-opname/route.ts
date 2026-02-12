@@ -103,10 +103,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify system stock matches
-    if (barang.stok !== validatedData.stokSistem) {
+    if (barang.stok.toNumber() !== validatedData.stokSistem) {
       return NextResponse.json(
         {
-          error: `Stok sistem tidak sesuai. Sistem: ${barang.stok}, Input: ${validatedData.stokSistem}`,
+          error: `Stok sistem tidak sesuai. Sistem: ${barang.stok.toNumber()}, Input: ${validatedData.stokSistem}`,
         },
         { status: 400 },
       );

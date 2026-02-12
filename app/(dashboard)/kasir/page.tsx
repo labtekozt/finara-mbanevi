@@ -219,8 +219,14 @@ export default function KasirPage() {
     if (!item) return;
 
     // Prevent invalid or empty values
-    if (isNaN(newQty) || newQty < 1) {
-      toast.error("Jumlah minimal adalah 1");
+    if (isNaN(newQty) || newQty <= 0) {
+      toast.error("Jumlah minimal adalah 0.25");
+      return;
+    }
+
+    // Validate minimum quantity (0.25)
+    if (newQty < 0.25) {
+      toast.error("Jumlah minimal adalah 0.25");
       return;
     }
 
@@ -709,28 +715,21 @@ export default function KasirPage() {
                                   // Don't update if empty or invalid
                                   if (value === "") return;
 
-                                  const numValue = parseInt(value);
-                                  if (!isNaN(numValue) && numValue >= 1) {
+                                  const numValue = parseFloat(value);
+                                  if (!isNaN(numValue) && numValue >= 0.25) {
                                     updateQuantity(item.barangId, numValue);
                                   }
                                 }}
-                                onKeyDown={(e) => {
-                                  // Prevent deletion to 0 or negative
-                                  if (
-                                    e.key === "Backspace" ||
-                                    e.key === "Delete"
-                                  ) {
-                                    const input = e.currentTarget;
-                                    if (
-                                      input.value === "1" ||
-                                      input.value.length <= 1
-                                    ) {
-                                      e.preventDefault();
-                                    }
+                                onBlur={(e) => {
+                                  // Ensure minimum value on blur
+                                  const value = parseFloat(e.target.value);
+                                  if (isNaN(value) || value < 0.25) {
+                                    updateQuantity(item.barangId, 0.25);
                                   }
                                 }}
                                 className="w-16 text-center text-sm font-medium"
-                                min={1}
+                                min={0.25}
+                                step={0.25}
                               />
                               <Button
                                 size="icon"
