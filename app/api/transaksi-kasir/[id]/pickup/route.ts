@@ -95,13 +95,14 @@ export async function POST(
           );
         }
 
-        if (qtyDiambil > itemTransaksi.qty) {
+        const qtyTersedia = Number(itemTransaksi.qty);
+        if (qtyDiambil > qtyTersedia) {
           throw new Error(
-            `Qty diambil (${qtyDiambil}) melebihi qty tersedia (${itemTransaksi.qty}) untuk ${itemTransaksi.namaBarang}`
+            `Qty diambil (${qtyDiambil}) melebihi qty tersedia (${qtyTersedia}) untuk ${itemTransaksi.namaBarang}`
           );
         }
 
-        const sisaQty = itemTransaksi.qty - qtyDiambil;
+        const sisaQty = qtyTersedia - qtyDiambil;
 
         if (sisaQty === 0) {
           // Item fully picked up - delete from itemTransaksi

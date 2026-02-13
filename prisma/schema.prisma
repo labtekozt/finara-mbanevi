@@ -57,8 +57,8 @@ model Barang {
   nama         String
   sku          String?  @unique
   kategori     String
-  stok         Int      @default(0)
-  stokMinimum  Int      @default(10)
+  stok         Decimal  @default(0) @db.Decimal(10, 3)
+  stokMinimum  Decimal  @default(10) @db.Decimal(10, 3)
   hargaBeli    Decimal  @db.Decimal(15, 2)
   hargaJual    Decimal  @db.Decimal(15, 2)
   satuan       String   @default("pcs")
@@ -117,7 +117,7 @@ model ItemTransaksi {
   barangId          String
   namaBarang        String
   hargaSatuan       Decimal  @db.Decimal(15, 2)
-  qty               Int
+  qty               Decimal  @db.Decimal(10, 3)
   subtotal          Decimal  @db.Decimal(15, 2)
   createdAt         DateTime @default(now())
   
@@ -158,7 +158,7 @@ model TransaksiMasuk {
   nomorTransaksi  String   @unique
   tanggal         DateTime @default(now())
   barangId        String
-  qty             Int
+  qty             Decimal  @db.Decimal(10, 3)
   hargaBeli       Decimal  @db.Decimal(15, 2)
   totalNilai      Decimal  @db.Decimal(15, 2)
   supplierId      String?  // Now linked to Supplier table
@@ -185,7 +185,7 @@ model TransaksiKeluar {
   nomorTransaksi  String   @unique
   tanggal         DateTime @default(now())
   barangId        String
-  qty             Int
+  qty             Decimal  @db.Decimal(10, 3)
   hargaBarang     Decimal  @db.Decimal(15, 2)
   totalNilai      Decimal  @db.Decimal(15, 2)
   tujuan          String

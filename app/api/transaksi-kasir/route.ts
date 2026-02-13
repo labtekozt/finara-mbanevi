@@ -16,7 +16,7 @@ const itemSchema = z.object({
   barangId: z.string(),
   namaBarang: z.string(),
   hargaSatuan: z.number(),
-  qty: z.number().int().positive(),
+  qty: z.number().positive(),
   subtotal: z.number(),
 });
 
