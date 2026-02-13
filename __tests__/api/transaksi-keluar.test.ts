@@ -29,6 +29,15 @@ jest.mock("@/lib/prisma", () => ({
     user: {
       findUnique: jest.fn(),
     },
+    periodeAkuntansi: {
+      findFirst: jest.fn(),
+    },
+    akun: {
+      findFirst: jest.fn(),
+    },
+    jurnalEntry: {
+      create: jest.fn(),
+    },
   },
 }));
 
@@ -87,7 +96,26 @@ describe("Transaksi Keluar API", () => {
       id: "user-123",
       username: "testuser",
     });
+    (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue({
+      id: "period-2024",
+      nama: "Tahun Buku 2024",
+      isActive: true,
+      isClosed: false,
+    });
+    (prisma.akun.findFirst as jest.Mock).mockResolvedValue({
+      id: "akun-1",
+      kode: "1001",
+      nama: "Kas",
+    });
+    (prisma.jurnalEntry.create as jest.Mock).mockResolvedValue({
+      id: "journal-1",
+      nomorJurnal: "JR-001",
+    });
     (generateKeluarNumber as jest.Mock).mockReturnValue("TRX-OUT-123");
+    (createJournalEntryForOutgoingTransaction as jest.Mock).mockResolvedValue({
+      id: "journal-1",
+      nomorJurnal: "JR-001",
+    });
   });
 
   describe("POST /api/transaksi-keluar", () => {
@@ -103,7 +131,7 @@ describe("Transaksi Keluar API", () => {
       const mockBarang = {
         id: "item-1",
         nama: "Item 1",
-        stok: 100,
+        stok: { toNumber: () => 100 },
         satuan: "pcs",
         hargaBeli: { toNumber: () => 5000 },
       };
@@ -175,7 +203,7 @@ describe("Transaksi Keluar API", () => {
       const mockBarang = {
         id: "item-1",
         nama: "Item 1",
-        stok: 50, // Less than 100
+        stok: { toNumber: () => 50 }, // Less than 100
         satuan: "pcs",
         hargaBeli: { toNumber: () => 5000 },
       };
@@ -207,7 +235,7 @@ describe("Transaksi Keluar API", () => {
       const mockBarang = {
         id: "item-1",
         nama: "Item 1",
-        stok: 100, // Looks enough initially
+        stok: { toNumber: () => 100 }, // Looks enough initially
         satuan: "pcs",
         hargaBeli: { toNumber: () => 5000 },
       };

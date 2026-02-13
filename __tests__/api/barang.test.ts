@@ -227,8 +227,9 @@ describe("Barang API", () => {
       const currentItem = {
         id: "item-1",
         nama: "Item 1",
-        stok: 10,
+        stok: { toNumber: () => 10 },
         hargaBeli: { toNumber: () => 5000 },
+        lokasiId: "loc-1",
       };
 
       const updateData = {
@@ -256,6 +257,7 @@ describe("Barang API", () => {
       const params = Promise.resolve({ id: "item-1" });
 
       const response = await PUT(req as any, { params });
+      const data = await response.json();
 
       expect(response.status).toBe(200);
       expect(prisma.barang.update).toHaveBeenCalled();
@@ -274,8 +276,9 @@ describe("Barang API", () => {
       const currentItem = {
         id: "item-1",
         nama: "Item 1",
-        stok: 10,
+        stok: { toNumber: () => 10 },
         hargaBeli: { toNumber: () => 5000 },
+        lokasiId: "loc-1",
       };
 
       const updateData = {

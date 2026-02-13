@@ -30,6 +30,15 @@ jest.mock("@/lib/prisma", () => ({
     user: {
       findUnique: jest.fn(),
     },
+    periodeAkuntansi: {
+      findFirst: jest.fn(),
+    },
+    akun: {
+      findFirst: jest.fn(),
+    },
+    jurnalEntry: {
+      create: jest.fn(),
+    },
   },
 }));
 
@@ -88,7 +97,26 @@ describe("Stock Opname API", () => {
       id: "user-123",
       username: "testuser",
     });
+    (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue({
+      id: "period-2024",
+      nama: "Tahun Buku 2024",
+      isActive: true,
+      isClosed: false,
+    });
+    (prisma.akun.findFirst as jest.Mock).mockResolvedValue({
+      id: "akun-1",
+      kode: "1001",
+      nama: "Kas",
+    });
+    (prisma.jurnalEntry.create as jest.Mock).mockResolvedValue({
+      id: "journal-1",
+      nomorJurnal: "JR-001",
+    });
     (generateTransactionNumber as jest.Mock).mockReturnValue("OPN-123");
+    (createJournalEntryForStockAdjustment as jest.Mock).mockResolvedValue({
+      id: "journal-1",
+      nomorJurnal: "JR-001",
+    });
   });
 
   describe("POST /api/stock-opname", () => {
@@ -104,8 +132,11 @@ describe("Stock Opname API", () => {
       const mockBarang = {
         id: "item-1",
         nama: "Item 1",
-        stok: 10,
-        hargaBeli: new Prisma.Decimal(5000),
+        stok: { toNumber: () => 10 },
+        hargaBeli: {
+          toNumber: () => 5000,
+          times: (n: number) => ({ toNumber: () => 5000 * n }),
+        },
       };
 
       (prisma.barang.findUnique as jest.Mock).mockResolvedValue(mockBarang);
@@ -155,8 +186,11 @@ describe("Stock Opname API", () => {
       const mockBarang = {
         id: "item-1",
         nama: "Item 1",
-        stok: 10,
-        hargaBeli: new Prisma.Decimal(5000),
+        stok: { toNumber: () => 10 },
+        hargaBeli: {
+          toNumber: () => 5000,
+          times: (n: number) => ({ toNumber: () => 5000 * n }),
+        },
       };
 
       (prisma.barang.findUnique as jest.Mock).mockResolvedValue(mockBarang);
@@ -204,7 +238,7 @@ describe("Stock Opname API", () => {
 
       const mockBarang = {
         id: "item-1",
-        stok: 15, // Actual system stock is 15
+        stok: { toNumber: () => 15 }, // Actual system stock is 15
       };
 
       (prisma.barang.findUnique as jest.Mock).mockResolvedValue(mockBarang);

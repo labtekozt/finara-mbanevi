@@ -26,6 +26,18 @@ jest.mock("@/lib/prisma", () => ({
     activityLog: {
       create: jest.fn(),
     },
+    user: {
+      findUnique: jest.fn(),
+    },
+    periodeAkuntansi: {
+      findFirst: jest.fn(),
+    },
+    akun: {
+      findFirst: jest.fn(),
+    },
+    jurnalEntry: {
+      create: jest.fn(),
+    },
   },
 }));
 
@@ -80,7 +92,30 @@ describe("Retur Pembelian API", () => {
     (require("next-auth").getServerSession as jest.Mock).mockResolvedValue(
       mockSession,
     );
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: "user-123",
+      username: "testuser",
+    });
+    (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue({
+      id: "period-2024",
+      nama: "Tahun Buku 2024",
+      isActive: true,
+      isClosed: false,
+    });
+    (prisma.akun.findFirst as jest.Mock).mockResolvedValue({
+      id: "akun-1",
+      kode: "1001",
+      nama: "Kas",
+    });
+    (prisma.jurnalEntry.create as jest.Mock).mockResolvedValue({
+      id: "journal-1",
+      nomorJurnal: "JR-001",
+    });
     (generateTransactionNumber as jest.Mock).mockReturnValue("RTP-123");
+    (createJournalEntryForPurchaseReturn as jest.Mock).mockResolvedValue({
+      id: "journal-1",
+      nomorJurnal: "JR-001",
+    });
   });
 
   describe("POST /api/retur-pembelian", () => {
@@ -90,7 +125,7 @@ describe("Retur Pembelian API", () => {
         id: originalTxId,
         nomorTransaksi: "TRX-IN-123",
         barangId: "item-1",
-        qty: 100,
+        qty: { toNumber: () => 100 },
         hargaBeli: { toNumber: () => 5000 },
         sumber: "Tunai",
         lokasiId: "loc-1",
@@ -165,7 +200,7 @@ describe("Retur Pembelian API", () => {
       const originalTx = {
         id: originalTxId,
         nomorTransaksi: "TRX-IN-123",
-        qty: 5,
+        qty: { toNumber: () => 5 },
         hargaBeli: { toNumber: () => 5000 },
       };
 
@@ -199,7 +234,7 @@ describe("Retur Pembelian API", () => {
         id: originalTxId,
         nomorTransaksi: "TRX-IN-CREDIT",
         barangId: "item-1",
-        qty: 100,
+        qty: { toNumber: () => 100 },
         hargaBeli: { toNumber: () => 5000 },
         sumber: "Hutang Supplier A", // Not "Tunai" or "Cash"
         lokasiId: "loc-1",

@@ -29,6 +29,18 @@ jest.mock("@/lib/prisma", () => ({
     activityLog: {
       create: jest.fn(),
     },
+    user: {
+      findUnique: jest.fn(),
+    },
+    periodeAkuntansi: {
+      findFirst: jest.fn(),
+    },
+    akun: {
+      findFirst: jest.fn(),
+    },
+    jurnalEntry: {
+      create: jest.fn(),
+    },
   },
 }));
 
@@ -83,7 +95,32 @@ describe("Retur Penjualan API", () => {
     (require("next-auth").getServerSession as jest.Mock).mockResolvedValue(
       mockSession,
     );
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      id: "user-123",
+      username: "testuser",
+    });
+    (prisma.periodeAkuntansi.findFirst as jest.Mock).mockResolvedValue({
+      id: "period-2024",
+      nama: "Tahun Buku 2024",
+      tanggalMulai: new Date("2024-01-01"),
+      tanggalAkhir: new Date("2024-12-31"),
+      isActive: true,
+      isClosed: false,
+    });
+    (prisma.akun.findFirst as jest.Mock).mockResolvedValue({
+      id: "akun-1",
+      kode: "1001",
+      nama: "Kas",
+    });
+    (prisma.jurnalEntry.create as jest.Mock).mockResolvedValue({
+      id: "journal-1",
+      nomorJurnal: "JR-001",
+    });
     (generateTransactionNumber as jest.Mock).mockReturnValue("RTPJ-123");
+    (createJournalEntryForSalesReturn as jest.Mock).mockResolvedValue({
+      id: "journal-1",
+      nomorJurnal: "JR-001",
+    });
   });
 
   describe("POST /api/retur-penjualan", () => {
@@ -97,7 +134,7 @@ describe("Retur Penjualan API", () => {
           {
             barangId: "item-1",
             namaBarang: "Item 1",
-            qty: 10,
+            qty: { toNumber: () => 10 },
             hargaSatuan: { toNumber: () => 10000 },
             barang: {
               hargaBeli: { toNumber: () => 8000 },
@@ -180,7 +217,7 @@ describe("Retur Penjualan API", () => {
           {
             barangId: "item-1",
             namaBarang: "Item 1",
-            qty: 5,
+            qty: { toNumber: () => 5 },
             hargaSatuan: { toNumber: () => 10000 },
             barang: {
               hargaBeli: { toNumber: () => 8000 },
